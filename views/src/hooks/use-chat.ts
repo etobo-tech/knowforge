@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { MockChatService } from "@/services/chat/mock-chat-service";
 import type { ChatService } from "@/services/chat/chat-service";
+import { getChatService } from "@/services/chat/get-chat-service";
 import type { Message } from "@/types/chat";
 
 const initialMessages: Message[] = [
@@ -13,7 +13,7 @@ const initialMessages: Message[] = [
   },
 ];
 
-const defaultChatService = new MockChatService();
+const defaultChatService = getChatService();
 
 export function useChat(chatService: ChatService = defaultChatService) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
@@ -36,17 +36,29 @@ export function useChat(chatService: ChatService = defaultChatService) {
     ]);
     setIsThinking(true);
 
-    const reply = await chatService.ask(userText);
+    try {
+      const reply = await chatService.ask(userText);
 
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: crypto.randomUUID(),
-        role: "assistant",
-        text: reply.text,
-      },
-    ]);
-    setIsThinking(false);
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: reply.text,
+        },
+      ]);
+    } catch {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: crypto.randomUUID(),
+          role: "assistant",
+          text: "I could not generate an answer right now. Please try again.",
+        },
+      ]);
+    } finally {
+      setIsThinking(false);
+    }
   };
 
   return { messages, input, isThinking, canSend, setInput, sendMessage };
