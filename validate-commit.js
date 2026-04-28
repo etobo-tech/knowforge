@@ -26,7 +26,7 @@ const VALID_MODULES = [
   'all',
   "api",
   'cross',
-  'frontend',
+  'front',
   "rag",
 ];
 
@@ -39,9 +39,15 @@ const VALID_TYPES = [
   'perf',
   'test',
   'build',
-  'ci',
-  'chore',
   'revert',
+];
+
+const VALID_SCOPES = [
+  'chore',
+  'docs',
+  'back',
+  'front',
+  'ci'
 ];
 
 function fail(message, details = []) {
@@ -104,6 +110,12 @@ function validateHeaderParts({ moduleName, type, scope, subject }) {
 
   if (!scope.trim()) {
     fail('Scope cannot be empty');
+  }
+
+  if (!VALID_SCOPES.includes(scope)) {
+    fail(`Invalid scope: "${scope}"`, [
+      `Valid scopes: ${VALID_SCOPES.join(', ')}`,
+    ]);
   }
 
   if (/[A-Z]/.test(subject)) {
