@@ -26,7 +26,7 @@ const VALID_MODULES = [
   'all',
   "api",
   'cross',
-  'front',
+  'views',
   "rag",
 ];
 
@@ -46,7 +46,7 @@ const VALID_SCOPES = [
   'chore',
   'docs',
   'back',
-  'front',
+  'views',
   'ci'
 ];
 
@@ -103,6 +103,19 @@ function validateHeaderParts({ moduleName, type, scope, subject }) {
   }
 
   if (!VALID_TYPES.includes(type)) {
+    if (
+      VALID_SCOPES.includes(type) &&
+      VALID_TYPES.includes(scope) &&
+      !VALID_SCOPES.includes(scope)
+    ) {
+      fail('Type and scope appear to be swapped', [
+        `Received: <type>="${type}" <scope>="${scope}"`,
+        'Expected: <module>\\<type>(scope): #<issue> <subject>',
+        `Valid types : ${VALID_TYPES.join(', ')}`,
+        `Valid scopes: ${VALID_SCOPES.join(', ')}`,
+      ]);
+    }
+
     fail(`Invalid type: "${type}"`, [
       `Valid types: ${VALID_TYPES.join(', ')}`,
     ]);
