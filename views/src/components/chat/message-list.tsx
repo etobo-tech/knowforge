@@ -10,13 +10,13 @@ type MessageListProps = {
 
 export function MessageList({ messages, isThinking, endRef }: MessageListProps) {
   return (
-    <section className="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+    <section className="flex-1 overflow-y-auto bg-zinc-50/60 px-4 py-6 sm:px-6">
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {messages.map((message) => (
           <MessageBubble key={message.id} message={message} />
         ))}
         {isThinking && (
-          <article className="mr-auto rounded-2xl bg-zinc-100 px-4 py-3 text-sm text-zinc-600 sm:text-base">
+          <article className="mr-auto rounded-2xl border border-zinc-200 bg-white px-4 py-3 text-sm text-zinc-600 shadow-sm sm:text-base">
             Thinking...
           </article>
         )}
