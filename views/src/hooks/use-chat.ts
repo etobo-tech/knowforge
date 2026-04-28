@@ -10,6 +10,8 @@ const initialMessages: Message[] = [
     id: "welcome",
     role: "assistant",
     text: "Welcome to Knowforge. Ask me anything about your documentation.",
+    createdAt: Date.now(),
+    kind: "normal",
   },
 ];
 
@@ -32,7 +34,13 @@ export function useChat(chatService: ChatService = defaultChatService) {
     setInput("");
     setMessages((prev) => [
       ...prev,
-      { id: crypto.randomUUID(), role: "user", text: userText },
+      {
+        id: crypto.randomUUID(),
+        role: "user",
+        text: userText,
+        createdAt: Date.now(),
+        kind: "normal",
+      },
     ]);
     setIsThinking(true);
 
@@ -45,6 +53,8 @@ export function useChat(chatService: ChatService = defaultChatService) {
           id: crypto.randomUUID(),
           role: "assistant",
           text: reply.text,
+          createdAt: Date.now(),
+          kind: "normal",
         },
       ]);
     } catch {
@@ -54,6 +64,8 @@ export function useChat(chatService: ChatService = defaultChatService) {
           id: crypto.randomUUID(),
           role: "assistant",
           text: "I could not generate an answer right now. Please try again.",
+          createdAt: Date.now(),
+          kind: "error",
         },
       ]);
     } finally {

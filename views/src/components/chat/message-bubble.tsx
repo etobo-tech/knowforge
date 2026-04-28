@@ -5,15 +5,34 @@ type MessageBubbleProps = {
 };
 
 export function MessageBubble({ message }: MessageBubbleProps) {
+  const timestamp = new Date(message.createdAt).toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+  const isError = message.kind === "error";
+
   return (
     <article
       className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm sm:text-base ${
         message.role === "user"
           ? "ml-auto bg-zinc-900 text-white"
-          : "mr-auto bg-zinc-100 text-zinc-900"
+          : isError
+            ? "mr-auto border border-red-200 bg-red-50 text-red-800"
+            : "mr-auto bg-zinc-100 text-zinc-900"
       }`}
     >
-      {message.text}
+      <p>{message.text}</p>
+      <p
+        className={`mt-1 text-[11px] ${
+          message.role === "user"
+            ? "text-zinc-300"
+            : isError
+              ? "text-red-500"
+              : "text-zinc-500"
+        }`}
+      >
+        {timestamp}
+      </p>
     </article>
   );
 }
