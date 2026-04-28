@@ -4,4 +4,6 @@ export type Message = {
   id: string;
   role: Role;
   text: string;
+  createdAt: number;
+  kind?: "normal" | "error";
 };
