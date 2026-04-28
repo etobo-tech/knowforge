@@ -3,11 +3,11 @@ import { HttpChatService } from "@/services/chat/http-chat-service";
 import { MockChatService } from "@/services/chat/mock-chat-service";
 
 const chatMode = process.env.NEXT_PUBLIC_CHAT_MODE ?? "mock";
-const chatApiBaseUrl = process.env.NEXT_PUBLIC_CHAT_API_BASE_URL ?? "";
+const chatEndpoint = process.env.NEXT_PUBLIC_CHAT_ENDPOINT ?? "/api/chat";
 
 const chatService: ChatService =
-  chatMode === "http" && chatApiBaseUrl
-    ? new HttpChatService({ baseUrl: chatApiBaseUrl })
+  chatMode === "http"
+    ? new HttpChatService({ endpoint: chatEndpoint })
     : new MockChatService();
 
 export function getChatService(): ChatService {
