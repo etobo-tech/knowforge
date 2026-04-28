@@ -46,7 +46,7 @@ const VALID_SCOPES = [
   'chore',
   'docs',
   'back',
-  'views',
+  'front',
   'ci'
 ];
 
