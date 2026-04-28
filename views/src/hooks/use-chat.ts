@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { MockChatService } from "@/services/chat/mock-chat-service";
+import type { ChatService } from "@/services/chat/chat-service";
 import type { Message } from "@/types/chat";
 
 const initialMessages: Message[] = [
@@ -11,7 +13,9 @@ const initialMessages: Message[] = [
   },
 ];
 
-export function useChat() {
+const defaultChatService = new MockChatService();
+
+export function useChat(chatService: ChatService = defaultChatService) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState("");
   const [isThinking, setIsThinking] = useState(false);
@@ -32,14 +36,14 @@ export function useChat() {
     ]);
     setIsThinking(true);
 
-    await new Promise((resolve) => setTimeout(resolve, 700));
+    const reply = await chatService.ask(userText);
 
     setMessages((prev) => [
       ...prev,
       {
         id: crypto.randomUUID(),
         role: "assistant",
-        text: `Mock answer: I received "${userText}". Backend integration comes next.`,
+        text: reply.text,
       },
     ]);
     setIsThinking(false);
