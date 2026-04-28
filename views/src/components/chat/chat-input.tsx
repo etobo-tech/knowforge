@@ -45,7 +45,7 @@ export function ChatInput({
   };
 
   return (
-    <section className="border-t border-zinc-200 bg-white px-4 py-4 sm:px-6">
+    <section className="border-t border-zinc-200 bg-white/95 px-4 py-4 sm:px-6">
       <form
         className="mx-auto flex w-full max-w-3xl items-end gap-3"
         onSubmit={handleSubmit}
@@ -53,9 +53,9 @@ export function ChatInput({
         <textarea
           ref={textareaRef}
           rows={1}
-          className="max-h-40 min-h-11 flex-1 resize-none rounded-xl border border-zinc-300 px-4 py-3 text-sm outline-none focus:border-zinc-500 disabled:cursor-not-allowed disabled:bg-zinc-100 sm:text-base"
+          className="max-h-40 min-h-11 flex-1 resize-none rounded-xl border border-zinc-300 bg-white px-4 py-3 text-sm text-zinc-800 placeholder:text-zinc-500 outline-none focus:border-zinc-500 focus:ring-2 focus:ring-zinc-200 disabled:cursor-not-allowed disabled:bg-zinc-100 disabled:text-zinc-500 sm:text-base"
           value={input}
-          placeholder="Type your question..."
+          placeholder="Write your question here..."
           disabled={isThinking}
           onChange={handleChange}
           onKeyDown={handleKeyDown}
@@ -63,7 +63,7 @@ export function ChatInput({
         <button
           type="submit"
           disabled={!canSend}
-          className="h-11 rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
+          className="h-11 rounded-xl bg-zinc-900 px-5 text-sm font-medium text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 sm:text-base"
         >
           Send
         </button>

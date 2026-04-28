@@ -24,16 +24,18 @@ export function ChatPage() {
   }, [messages, isThinking]);
 
   return (
-    <main className="mx-auto flex h-dvh w-full max-w-4xl flex-col bg-white">
-      <ChatHeader onClear={clearMessages} canClear={canClear} />
-      <MessageList messages={messages} isThinking={isThinking} endRef={endRef} />
-      <ChatInput
-        input={input}
-        canSend={canSend}
-        isThinking={isThinking}
-        onInputChange={setInput}
-        onSubmit={sendMessage}
-      />
+    <main className="flex h-dvh w-full items-center justify-center px-3 py-4 sm:px-6">
+      <div className="flex h-full w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-zinc-200 bg-white/90 shadow-xl backdrop-blur-sm">
+        <ChatHeader onClear={clearMessages} canClear={canClear} />
+        <MessageList messages={messages} isThinking={isThinking} endRef={endRef} />
+        <ChatInput
+          input={input}
+          canSend={canSend}
+          isThinking={isThinking}
+          onInputChange={setInput}
+          onSubmit={sendMessage}
+        />
+      </div>
     </main>
   );
 }
