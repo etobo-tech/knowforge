@@ -61,5 +61,21 @@ export function useChat(chatService: ChatService = defaultChatService) {
     }
   };
 
-  return { messages, input, isThinking, canSend, setInput, sendMessage };
+  const clearMessages = () => {
+    if (isThinking) return;
+    setMessages(initialMessages);
+  };
+
+  const canClear = messages.length > 1 && !isThinking;
+
+  return {
+    messages,
+    input,
+    isThinking,
+    canSend,
+    canClear,
+    setInput,
+    sendMessage,
+    clearMessages,
+  };
 }
