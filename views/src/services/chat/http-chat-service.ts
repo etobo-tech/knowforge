@@ -1,18 +1,18 @@
 import type { ChatReply, ChatService } from "@/services/chat/chat-service";
 
 type HttpChatServiceOptions = {
-  baseUrl: string;
+  endpoint: string;
 };
 
 export class HttpChatService implements ChatService {
-  private readonly baseUrl: string;
+  private readonly endpoint: string;
 
   constructor(options: HttpChatServiceOptions) {
-    this.baseUrl = options.baseUrl.replace(/\/$/, "");
+    this.endpoint = options.endpoint;
   }
 
   async ask(question: string): Promise<ChatReply> {
-    const response = await fetch(`${this.baseUrl}/chat`, {
+    const response = await fetch(this.endpoint, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ question }),
