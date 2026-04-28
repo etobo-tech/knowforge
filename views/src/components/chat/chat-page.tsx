@@ -30,6 +30,7 @@ export function ChatPage() {
       <ChatInput
         input={input}
         canSend={canSend}
+        isThinking={isThinking}
         onInputChange={setInput}
         onSubmit={sendMessage}
       />
