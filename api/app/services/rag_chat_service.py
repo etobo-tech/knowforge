@@ -1,4 +1,4 @@
-from app.core.constants import CHAT_TOP_K
+from app.core.constants import CHAT_MIN_SCORE, CHAT_TOP_K
 from app.db.models.rag import MetricEventType
 from app.db.session import SessionFactory
 from app.schemas.chat import ChatRequest, ChatResponse, Citation
@@ -17,8 +17,11 @@ def answer_question(*, request: ChatRequest) -> ChatResponse:
             query_embedding=query_embedding,
             top_k=CHAT_TOP_K,
         )
+        relevant_matches = [
+            (chunk, score) for chunk, score in matches if score >= CHAT_MIN_SCORE
+        ]
 
-        if not matches:
+        if not relevant_matches:
             return ChatResponse(
                 answer=(
                     "I do not have enough context in the uploaded files to answer that question."
@@ -26,14 +29,14 @@ def answer_question(*, request: ChatRequest) -> ChatResponse:
                 citations=[],
             )
 
-        context_chunks = [chunk.content for chunk, _ in matches]
+        context_chunks = [chunk.content for chunk, _ in relevant_matches]
         answer = generate_grounded_answer(
             question=request.question,
             context_chunks=context_chunks,
         )
         citations = [
             Citation(file_id=str(chunk.document_id), chunk_id=str(chunk.id))
-            for chunk, _ in matches
+            for chunk, _ in relevant_matches
         ]
         repository.log_metric_event(
             workspace_id=request.workspace_id,
