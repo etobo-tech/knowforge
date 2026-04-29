@@ -16,6 +16,7 @@ from app.core.constants import (
     LOCAL_STORAGE_ROOT,
     SUPPORTED_SUFFIXES,
 )
+from app.services.rag_ingestion import persist_rag_document
 from app.types.enums import FileStatus
 
 
@@ -119,7 +120,13 @@ def _process_uploaded_file(
         return FileStatus.FAILED
 
     _write_chunks(workspace_id=workspace_id, file_id=file_id, chunks=chunks)
-    return FileStatus.READY
+    return persist_rag_document(
+        workspace_id=workspace_id,
+        file_id=file_id,
+        filename=storage_path.name,
+        storage_path=str(storage_path),
+        chunks=chunks,
+    )
 
 
 async def save_uploaded_file(

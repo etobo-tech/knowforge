@@ -10,9 +10,16 @@ class RagRepository:
         self._session = session
 
     def create_document(
-        self, *, workspace_id: str, filename: str, storage_path: str, status: DocumentStatus
+        self,
+        *,
+        document_id: UUID | None = None,
+        workspace_id: str,
+        filename: str,
+        storage_path: str,
+        status: DocumentStatus,
     ) -> DocumentModel:
         document = DocumentModel(
+            id=document_id,
             workspace_id=workspace_id,
             filename=filename,
             storage_path=storage_path,
