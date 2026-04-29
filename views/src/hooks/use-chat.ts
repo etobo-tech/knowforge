@@ -55,6 +55,7 @@ export function useChat(chatService: ChatService = defaultChatService) {
           text: reply.text,
           createdAt: Date.now(),
           kind: "normal",
+          citations: reply.citations,
         },
       ]);
     } catch {

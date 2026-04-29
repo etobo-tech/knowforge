@@ -22,6 +22,16 @@ export function MessageBubble({ message }: MessageBubbleProps) {
       }`}
     >
       <p>{message.text}</p>
+      {message.role === "assistant" &&
+        message.citations &&
+        message.citations.length > 0 && (
+          <p className="mt-2 text-xs text-zinc-500">
+            Sources:{" "}
+            {message.citations
+              .map((item) => `${item.fileId}:${item.chunkId}`)
+              .join(", ")}
+          </p>
+        )}
       <p
         className={`mt-1 text-[11px] ${
           message.role === "user"

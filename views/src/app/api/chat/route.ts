@@ -6,6 +6,7 @@ type ChatRequest = {
 
 type ChatResponse = {
   answer?: string;
+  citations?: Array<{ file_id?: string; chunk_id?: string }>;
 };
 
 function getUpstreamUrl(): string | null {
@@ -35,10 +36,7 @@ export async function POST(request: Request) {
 
   const upstreamUrl = getUpstreamUrl();
   if (!upstreamUrl) {
-    await new Promise((resolve) => setTimeout(resolve, 700));
-    return NextResponse.json({
-      answer: `Mock answer: I received "${question}". Backend integration comes next.`,
-    });
+    return NextResponse.json({ error: "chat_upstream_not_configured" }, { status: 503 });
   }
 
   const upstreamResponse = await fetch(upstreamUrl, {
@@ -53,5 +51,8 @@ export async function POST(request: Request) {
   }
 
   const upstreamPayload = (await upstreamResponse.json()) as ChatResponse;
-  return NextResponse.json({ answer: upstreamPayload.answer ?? "No answer available." });
+  return NextResponse.json({
+    answer: upstreamPayload.answer ?? "No answer available.",
+    citations: upstreamPayload.citations ?? [],
+  });
 }
