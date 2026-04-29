@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 
 from app.schemas.chat import ChatRequest, ChatResponse
-from app.services.local_chat_rag import answer_question
+from app.services.rag_chat_service import answer_question
 
 router = APIRouter(tags=["chat"])
 

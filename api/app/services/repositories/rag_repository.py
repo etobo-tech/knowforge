@@ -40,6 +40,19 @@ class RagRepository:
         if chunks:
             self._session.add_all(chunks)
 
+    def search_similar_chunks(
+        self, *, workspace_id: str, query_embedding: list[float], top_k: int
+    ) -> list[tuple[ChunkModel, float]]:
+        distance = ChunkModel.embedding.cosine_distance(query_embedding)
+        rows = (
+            self._session.query(ChunkModel, (1 - distance).label("score"))
+            .filter(ChunkModel.workspace_id == workspace_id)
+            .order_by(distance.asc())
+            .limit(max(1, top_k))
+            .all()
+        )
+        return [(chunk, float(score)) for chunk, score in rows]
+
     def log_metric_event(
         self,
         *,
