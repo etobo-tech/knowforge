@@ -6,6 +6,7 @@ export class MockChatService implements ChatService {
 
     return {
       text: `Mock answer: I received "${question}". Backend integration comes next.`,
+      citations: [],
     };
   }
 }

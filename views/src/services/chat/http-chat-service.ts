@@ -1,3 +1,4 @@
+import type { Citation } from "@/types/chat";
 import type { ChatReply, ChatService } from "@/services/chat/chat-service";
 
 type HttpChatServiceOptions = {
@@ -22,7 +23,21 @@ export class HttpChatService implements ChatService {
       throw new Error("chat_request_failed");
     }
 
-    const payload = (await response.json()) as { answer?: string };
-    return { text: payload.answer ?? "No answer available." };
+    const payload = (await response.json()) as {
+      answer?: string;
+      citations?: Array<{ file_id?: string; chunk_id?: string }>;
+    };
+
+    const citations: Citation[] = (payload.citations ?? [])
+      .map((item) => ({
+        fileId: item.file_id ?? "",
+        chunkId: item.chunk_id ?? "",
+      }))
+      .filter((item) => item.fileId.length > 0 && item.chunkId.length > 0);
+
+    return {
+      text: payload.answer ?? "No answer available.",
+      citations,
+    };
   }
 }
