@@ -1,1 +1,3 @@
-# Import ORM models here so Alembic autogenerate can discover metadata.
+from app.db.models.rag import ChunkModel, DocumentModel, MetricEventModel
+
+__all__ = ["DocumentModel", "ChunkModel", "MetricEventModel"]
