@@ -89,16 +89,23 @@ def _chunk_text(*, text: str) -> list[str]:
     return splitter.split_text(normalized)
 
 
-def _write_chunks(*, file_id: str, chunks: list[str]) -> None:
+def _write_chunks(*, workspace_id: str, file_id: str, chunks: list[str]) -> None:
     LOCAL_CHUNKS_ROOT.mkdir(parents=True, exist_ok=True)
     payload = [
-        {"chunk_id": f"{file_id}_{idx}", "content": chunk}
+        {
+            "workspace_id": workspace_id,
+            "file_id": file_id,
+            "chunk_id": f"{file_id}_{idx}",
+            "content": chunk,
+        }
         for idx, chunk in enumerate(chunks)
     ]
     _chunks_path(file_id=file_id).write_text(json.dumps(payload))
 
 
-def _process_uploaded_file(*, file_id: str, storage_path: Path) -> FileStatus:
+def _process_uploaded_file(
+    *, workspace_id: str, file_id: str, storage_path: Path
+) -> FileStatus:
     if storage_path.suffix.lower() not in SUPPORTED_SUFFIXES:
         return FileStatus.FAILED
 
@@ -111,7 +118,7 @@ def _process_uploaded_file(*, file_id: str, storage_path: Path) -> FileStatus:
     if not chunks:
         return FileStatus.FAILED
 
-    _write_chunks(file_id=file_id, chunks=chunks)
+    _write_chunks(workspace_id=workspace_id, file_id=file_id, chunks=chunks)
     return FileStatus.READY
 
 
@@ -132,7 +139,11 @@ async def save_uploaded_file(
     storage_path.write_bytes(content)
 
     _write_status(file_id=file_id, status=FileStatus.PROCESSING)
-    final_status = _process_uploaded_file(file_id=file_id, storage_path=storage_path)
+    final_status = _process_uploaded_file(
+        workspace_id=workspace_id,
+        file_id=file_id,
+        storage_path=storage_path,
+    )
     _write_status(file_id=file_id, status=final_status)
 
     return StoredFile(
