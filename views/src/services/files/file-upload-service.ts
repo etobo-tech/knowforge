@@ -28,7 +28,8 @@ export async function uploadKnowledgeFile({
   });
 
   if (!response.ok) {
-    throw new Error("file_upload_failed");
+    const payload = (await response.json().catch(() => ({}))) as { error?: string };
+    throw new Error(payload.error ?? "file_upload_failed");
   }
 
   const payload = (await response.json()) as {
