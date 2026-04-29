@@ -4,12 +4,17 @@ from pathlib import Path
 from uuid import uuid4
 
 from fastapi import UploadFile
+from llama_index.core.node_parser import SentenceSplitter
 
 from app.core.constants import (
+    CHUNK_OVERLAP,
+    CHUNK_SIZE,
     JSON_FILE_ID_KEY,
     JSON_STATUS_KEY,
+    LOCAL_CHUNKS_ROOT,
     LOCAL_STATUS_ROOT,
     LOCAL_STORAGE_ROOT,
+    SUPPORTED_SUFFIXES,
 )
 from app.types.enums import FileStatus
 
@@ -30,6 +35,10 @@ def _safe_filename(*, raw_name: str) -> str:
 
 def _status_path(*, file_id: str) -> Path:
     return LOCAL_STATUS_ROOT / f"{file_id}.json"
+
+
+def _chunks_path(*, file_id: str) -> Path:
+    return LOCAL_CHUNKS_ROOT / f"{file_id}.json"
 
 
 def _workspace_dir(*, workspace_id: str) -> Path:
@@ -68,6 +77,44 @@ def get_file_status(*, file_id: str) -> FileStatus:
         return FileStatus.UNKNOWN
 
 
+def _chunk_text(*, text: str) -> list[str]:
+    normalized = text.strip()
+    if not normalized:
+        return []
+
+    splitter = SentenceSplitter(
+        chunk_size=CHUNK_SIZE,
+        chunk_overlap=CHUNK_OVERLAP,
+    )
+    return splitter.split_text(normalized)
+
+
+def _write_chunks(*, file_id: str, chunks: list[str]) -> None:
+    LOCAL_CHUNKS_ROOT.mkdir(parents=True, exist_ok=True)
+    payload = [
+        {"chunk_id": f"{file_id}_{idx}", "content": chunk}
+        for idx, chunk in enumerate(chunks)
+    ]
+    _chunks_path(file_id=file_id).write_text(json.dumps(payload))
+
+
+def _process_uploaded_file(*, file_id: str, storage_path: Path) -> FileStatus:
+    if storage_path.suffix.lower() not in SUPPORTED_SUFFIXES:
+        return FileStatus.FAILED
+
+    try:
+        text = storage_path.read_text(encoding="utf-8")
+    except UnicodeDecodeError:
+        return FileStatus.FAILED
+
+    chunks = _chunk_text(text=text)
+    if not chunks:
+        return FileStatus.FAILED
+
+    _write_chunks(file_id=file_id, chunks=chunks)
+    return FileStatus.READY
+
+
 async def save_uploaded_file(
     *, workspace_id: str, uploaded_file: UploadFile
 ) -> StoredFile:
@@ -84,10 +131,12 @@ async def save_uploaded_file(
     content = await uploaded_file.read()
     storage_path.write_bytes(content)
 
-    _write_status(file_id=file_id, status=FileStatus.PENDING)
+    _write_status(file_id=file_id, status=FileStatus.PROCESSING)
+    final_status = _process_uploaded_file(file_id=file_id, storage_path=storage_path)
+    _write_status(file_id=file_id, status=final_status)
 
     return StoredFile(
         file_id=file_id,
         storage_path=storage_path,
-        status=FileStatus.PENDING,
+        status=final_status,
     )
