@@ -46,9 +46,13 @@ export function ChatPage() {
         text: `File status update: ${statusResult.status} (id: ${statusResult.fileId})`,
         kind: statusResult.status === "failed" || statusResult.status === "not_found" ? "error" : "normal",
       });
-    } catch {
+    } catch (error) {
+      const detail =
+        error instanceof Error && error.message === "unsupported_file_type"
+          ? "Only .txt and .md files are supported right now."
+          : "File upload failed. Please try again.";
       addAssistantMessage({
-        text: "File upload failed. Please try again.",
+        text: detail,
         kind: "error",
       });
     } finally {
