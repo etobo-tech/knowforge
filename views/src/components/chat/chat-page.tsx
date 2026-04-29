@@ -6,6 +6,7 @@ import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
 import { useChat } from "@/hooks/use-chat";
 import { waitForKnowledgeFileStatus } from "@/services/files/file-status-service";
+import { mapUploadErrorToMessage } from "@/services/files/upload-error-message";
 import { uploadKnowledgeFile } from "@/services/files/file-upload-service";
 
 const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID ?? "default-workspace";
@@ -47,12 +48,8 @@ export function ChatPage() {
         kind: statusResult.status === "failed" || statusResult.status === "not_found" ? "error" : "normal",
       });
     } catch (error) {
-      const detail =
-        error instanceof Error && error.message === "unsupported_file_type"
-          ? "Only .txt and .md files are supported right now."
-          : "File upload failed. Please try again.";
       addAssistantMessage({
-        text: detail,
+        text: mapUploadErrorToMessage(error),
         kind: "error",
       });
     } finally {
