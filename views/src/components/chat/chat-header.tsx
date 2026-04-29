@@ -1,11 +1,20 @@
 type ChatHeaderProps = {
   onClear: () => void;
+  onUpload: (file: File) => Promise<void>;
+  isUploading: boolean;
   onRetry?: () => Promise<void>;
   canClear: boolean;
   canRetry?: boolean;
 };
 
-export function ChatHeader({ onClear, onRetry, canClear, canRetry }: ChatHeaderProps) {
+export function ChatHeader({
+  onClear,
+  onUpload,
+  isUploading,
+  onRetry,
+  canClear,
+  canRetry,
+}: ChatHeaderProps) {
   return (
     <header className="border-b border-zinc-200 bg-white/95 px-4 py-3 sm:px-6">
       <div className="mx-auto flex w-full max-w-3xl items-center justify-between gap-2">
@@ -14,6 +23,21 @@ export function ChatHeader({ onClear, onRetry, canClear, canRetry }: ChatHeaderP
           <p className="text-xs text-zinc-500">Ask questions about your knowledge base</p>
         </div>
         <div className="flex items-center gap-2">
+          <label className="cursor-pointer rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 sm:text-sm">
+            Upload
+            <input
+              type="file"
+              className="hidden"
+              accept=".txt,.md,text/plain,text/markdown"
+              disabled={isUploading}
+              onChange={async (event) => {
+                const file = event.target.files?.[0];
+                event.target.value = "";
+                if (!file) return;
+                await onUpload(file);
+              }}
+            />
+          </label>
           {onRetry && (
             <button
               type="button"
@@ -27,7 +51,7 @@ export function ChatHeader({ onClear, onRetry, canClear, canRetry }: ChatHeaderP
           <button
             type="button"
             onClick={onClear}
-            disabled={!canClear}
+            disabled={!canClear || isUploading}
             className="rounded-lg border border-zinc-300 px-3 py-1.5 text-xs font-medium text-zinc-700 disabled:cursor-not-allowed disabled:opacity-40 sm:text-sm"
           >
             Clear chat

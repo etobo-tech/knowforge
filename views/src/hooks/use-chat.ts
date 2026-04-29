@@ -80,6 +80,25 @@ export function useChat(chatService: ChatService = defaultChatService) {
 
   const canClear = messages.length > 1 && !isThinking;
 
+  const addAssistantMessage = ({
+    text,
+    kind = "normal",
+  }: {
+    text: string;
+    kind?: "normal" | "error";
+  }) => {
+    setMessages((prev) => [
+      ...prev,
+      {
+        id: crypto.randomUUID(),
+        role: "assistant",
+        text,
+        createdAt: Date.now(),
+        kind,
+      },
+    ]);
+  };
+
   return {
     messages,
     input,
@@ -89,5 +108,6 @@ export function useChat(chatService: ChatService = defaultChatService) {
     setInput,
     sendMessage,
     clearMessages,
+    addAssistantMessage,
   };
 }
