@@ -5,6 +5,7 @@ import { ChatHeader } from "@/components/chat/chat-header";
 import { ChatInput } from "@/components/chat/chat-input";
 import { MessageList } from "@/components/chat/message-list";
 import { useChat } from "@/hooks/use-chat";
+import { waitForKnowledgeFileStatus } from "@/services/files/file-status-service";
 import { uploadKnowledgeFile } from "@/services/files/file-upload-service";
 
 const workspaceId = process.env.NEXT_PUBLIC_WORKSPACE_ID ?? "default-workspace";
@@ -37,6 +38,13 @@ export function ChatPage() {
       });
       addAssistantMessage({
         text: `File uploaded: ${file.name} (id: ${result.fileId}, status: ${result.status})`,
+      });
+      const statusResult = await waitForKnowledgeFileStatus({
+        fileId: result.fileId,
+      });
+      addAssistantMessage({
+        text: `File status update: ${statusResult.status} (id: ${statusResult.fileId})`,
+        kind: statusResult.status === "failed" || statusResult.status === "not_found" ? "error" : "normal",
       });
     } catch {
       addAssistantMessage({

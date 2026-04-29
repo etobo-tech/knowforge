@@ -1,6 +1,14 @@
+export type FileProcessingStatus =
+  | "pending"
+  | "processing"
+  | "ready"
+  | "failed"
+  | "not_found"
+  | "unknown";
+
 export type FileUploadResult = {
   fileId: string;
-  status: "pending" | "processing" | "ready" | "failed" | "not_found" | "unknown";
+  status: FileProcessingStatus;
 };
 
 export async function uploadKnowledgeFile({
