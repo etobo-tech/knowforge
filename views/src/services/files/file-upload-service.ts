@@ -1,3 +1,5 @@
+import { getMaxUploadBytes } from "@/config/upload-limits";
+
 export type FileProcessingStatus =
   | "pending"
   | "processing"
@@ -18,6 +20,10 @@ export async function uploadKnowledgeFile({
   file: File;
   workspaceId: string;
 }): Promise<FileUploadResult> {
+  if (file.size > getMaxUploadBytes()) {
+    throw new Error("file_too_large");
+  }
+
   const formData = new FormData();
   formData.set("workspace_id", workspaceId);
   formData.set("uploaded_file", file);
@@ -28,8 +34,11 @@ export async function uploadKnowledgeFile({
   });
 
   if (!response.ok) {
-    const payload = (await response.json().catch(() => ({}))) as { error?: string };
-    throw new Error(payload.error ?? "file_upload_failed");
+    const payload = (await response.json().catch(() => ({}))) as {
+      error?: string;
+      detail?: string;
+    };
+    throw new Error(payload.error ?? payload.detail ?? "file_upload_failed");
   }
 
   const payload = (await response.json()) as {
