@@ -10,3 +10,4 @@ JSON_STATUS_KEY = "status"
 CHUNK_SIZE = 800
 CHUNK_OVERLAP = 100
 SUPPORTED_SUFFIXES = frozenset({".txt", ".md"})
+CHAT_TOP_K = 3
