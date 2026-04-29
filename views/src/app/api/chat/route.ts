@@ -28,6 +28,11 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "invalid_question" }, { status: 400 });
   }
 
+  const workspaceId = (process.env.NEXT_PUBLIC_WORKSPACE_ID ?? "").trim();
+  if (!workspaceId) {
+    return NextResponse.json({ error: "workspace_not_configured" }, { status: 500 });
+  }
+
   const upstreamUrl = getUpstreamUrl();
   if (!upstreamUrl) {
     await new Promise((resolve) => setTimeout(resolve, 700));
@@ -39,7 +44,7 @@ export async function POST(request: Request) {
   const upstreamResponse = await fetch(upstreamUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question }),
+    body: JSON.stringify({ workspace_id: workspaceId, question }),
     cache: "no-store",
   });
 
