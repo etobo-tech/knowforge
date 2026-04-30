@@ -1,6 +1,8 @@
 .venv/
 __pycache__/
 *.egg-info/
+.coverage
+coverage.xml
 data/
 .env
 .env.*
