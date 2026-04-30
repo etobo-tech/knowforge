@@ -29,3 +29,31 @@ class TestFilesUploadRoute(unittest.TestCase):
 
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json(), {"detail": "unsupported_file_type"})
+
+    def test_rejects_file_too_large(self) -> None:
+        oversized = b"a" * (2 * 1024 * 1024 + 1)
+        response = self.client.post(
+            "/files/upload",
+            data={"workspace_id": "ws-test"},
+            files={"uploaded_file": ("notes.md", oversized, "text/markdown")},
+        )
+
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.json(), {"detail": "file_too_large"})
+
+    def test_rejects_empty_filename_at_validation_layer(self) -> None:
+        response = self.client.post(
+            "/files/upload",
+            data={"workspace_id": "ws-test"},
+            files={"uploaded_file": ("", b"dummy", "text/plain")},
+        )
+
+        self.assertEqual(response.status_code, 422)
+
+    def test_rejects_missing_uploaded_file_field(self) -> None:
+        response = self.client.post(
+            "/files/upload",
+            data={"workspace_id": "ws-test"},
+        )
+
+        self.assertEqual(response.status_code, 422)
