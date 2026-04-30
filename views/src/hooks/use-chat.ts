@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import type { ChatService } from "@/services/chat/chat-service";
 import { getChatService } from "@/services/chat/get-chat-service";
 import type { Message } from "@/types/chat";
+import { mapChatErrorToMessage } from "@/services/chat/chat-error-message";
 
 const initialMessages: Message[] = [
   {
@@ -58,13 +59,13 @@ export function useChat(chatService: ChatService = defaultChatService) {
           citations: reply.citations,
         },
       ]);
-    } catch {
+    } catch (error) {
       setMessages((prev) => [
         ...prev,
         {
           id: crypto.randomUUID(),
           role: "assistant",
-          text: "I could not generate an answer right now. Please try again.",
+          text: mapChatErrorToMessage(error),
           createdAt: Date.now(),
           kind: "error",
         },

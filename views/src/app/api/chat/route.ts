@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 
+import { errorCodeFromPayload } from "@/lib/api-error";
+
 type ChatRequest = {
   question?: string;
 };
@@ -47,7 +49,11 @@ export async function POST(request: Request) {
   });
 
   if (!upstreamResponse.ok) {
-    return NextResponse.json({ error: "upstream_error" }, { status: 502 });
+    const payload = (await upstreamResponse.json().catch(() => ({}))) as unknown;
+    return NextResponse.json(
+      { error: errorCodeFromPayload(payload) ?? "upstream_error" },
+      { status: upstreamResponse.status },
+    );
   }
 
   const upstreamPayload = (await upstreamResponse.json()) as ChatResponse;

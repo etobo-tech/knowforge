@@ -1,5 +1,6 @@
 import type { Citation } from "@/types/chat";
 import type { ChatReply, ChatService } from "@/services/chat/chat-service";
+import { errorCodeFromPayload } from "@/lib/api-error";
 
 type HttpChatServiceOptions = {
   endpoint: string;
@@ -20,7 +21,8 @@ export class HttpChatService implements ChatService {
     });
 
     if (!response.ok) {
-      throw new Error("chat_request_failed");
+      const payload = (await response.json().catch(() => ({}))) as unknown;
+      throw new Error(errorCodeFromPayload(payload) ?? "chat_request_failed");
     }
 
     const payload = (await response.json()) as {
