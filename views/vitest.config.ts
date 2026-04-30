@@ -12,5 +12,11 @@ export default defineConfig({
     include: ["src/**/*.test.ts"],
     clearMocks: true,
     restoreMocks: true,
+    coverage: {
+      provider: "v8",
+      reporter: ["text", "lcov"],
+      include: ["src/**/*.{ts,tsx}"],
+      exclude: ["src/**/*.test.ts"],
+    },
   },
 });
