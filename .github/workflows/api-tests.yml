@@ -1,0 +1,46 @@
+name: API Tests
+
+on:
+  push:
+    branches-ignore:
+      - main
+    paths:
+      - "api/**"
+      - "codecov.yml"
+      - ".github/workflows/api-tests.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  api-tests:
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: ${{ secrets.DATABASE_URL }}
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+
+      - name: Install backend dependencies
+        working-directory: api
+        run: uv sync --dev
+
+      - name: Run backend tests with coverage
+        working-directory: api
+        run: uv run pytest
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: api-coverage-xml
+          path: api/coverage.xml
+          if-no-files-found: error
