@@ -1,4 +1,4 @@
-name: API Tests
+name: API and Frontend Tests
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - main
     paths:
       - "api/**"
-      - "codecov.yml"
+      - "views/**"
       - ".github/workflows/api-tests.yml"
 
 permissions:
@@ -43,4 +43,36 @@ jobs:
         with:
           name: api-coverage-xml
           path: api/coverage.xml
+          if-no-files-found: error
+
+  frontend-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      - name: Install frontend dependencies
+        working-directory: views
+        run: pnpm install --frozen-lockfile
+
+      - name: Run frontend tests with coverage
+        working-directory: views
+        run: pnpm test:coverage
+
+      - name: Upload frontend coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: views-coverage-lcov
+          path: views/coverage/lcov.info
           if-no-files-found: error
