@@ -1,0 +1,12 @@
+#!/bin/sh
+# Commit message linting hook
+# 
+# Validates commit messages against the project format:
+# <module>\<type>(scope): #<issue> <message>
+# Example: all\feat(back): #54 add-commitlint
+
+# Get the git directory (repo root)
+GIT_DIR="$(git rev-parse --show-toplevel)"
+
+# Run the custom validator
+node "$GIT_DIR/validate-commit.js" "$1"
