@@ -22,6 +22,8 @@ async def upload_file(
         document, created = await upload_document(file, DEV_USER_ID, db)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
     response.status_code = status.HTTP_201_CREATED if created else status.HTTP_200_OK
 

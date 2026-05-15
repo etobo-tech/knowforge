@@ -8,6 +8,7 @@ class DocumentResponse(BaseModel):
     mime_type: str
     size_bytes: int
     status: str
+    chunks_count: int
     content_hash: str | None
     created_at: datetime
 
