@@ -41,11 +41,23 @@ def _format_document(
     )
 
 
+def _check_existing_document(
+    db: Session,
+    user_id: uuid.UUID,
+    content_hash: str,
+) -> Document | None:
+    return (
+        db.query(Document)
+        .filter(Document.user_id == user_id, Document.content_hash == content_hash)
+        .first()
+    )
+
+
 async def upload_document(
     file: UploadFile,
     user_id: uuid.UUID,
     db: Session,
-) -> Document:
+) -> tuple[Document, bool]:
     _check_content_type(file.content_type)
 
     content = await file.read()
@@ -55,6 +67,22 @@ async def upload_document(
     size = len(content)
 
     _check_file_size(size)
+
+    existing = _check_existing_document(db, user_id, content_hash)
+
+    if existing:
+        if existing.status in (DocumentStatus.UPLOADING, DocumentStatus.FAILED):
+            try:
+                upload_document_to_s3(existing, content)
+            except Exception:
+                db.rollback()
+                raise
+
+            existing.status = DocumentStatus.UPLOADED
+            existing.error_message = None
+            db.commit()
+            db.refresh(existing)
+        return existing, False
 
     document = _format_document(file, user_id, content_hash, size)
 
@@ -71,4 +99,4 @@ async def upload_document(
     db.commit()
     db.refresh(document)
 
-    return document
+    return document, True

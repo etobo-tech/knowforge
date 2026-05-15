@@ -6,7 +6,7 @@ load_dotenv()
 
 
 class Config:
-    S3_BUCKET = "knowforge-documents"
+    S3_BUCKET = "knowforge-documents-bucket"
     S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL")
     S3_REGION = "us-east-1"
     AWS_ACCESS_KEY_ID = os.getenv("AWS_ACCESS_KEY_ID")
