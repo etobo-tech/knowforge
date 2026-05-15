@@ -1,7 +1,7 @@
 data "aws_caller_identity" "current" {}
 
 resource "aws_s3_bucket" "documents" {
-  bucket = "knowforge-documents"
+  bucket = "knowforge-documents-bucket"
 }
 
 resource "aws_s3_bucket_public_access_block" "documents" {

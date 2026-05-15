@@ -1,5 +1,5 @@
 resource "aws_s3_bucket" "terraform_state" {
-  bucket = "knowforge-tfstate-${data.aws_caller_identity.current.account_id}"
+  bucket        = "knowforge-tfstate-${data.aws_caller_identity.current.account_id}"
 }
 
 resource "aws_s3_bucket_public_access_block" "terraform_state" {
