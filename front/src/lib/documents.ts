@@ -59,6 +59,24 @@ export function mapDocumentStatus(apiStatus: string): FileStatus {
   return 'processing'
 }
 
+/** Human-readable label for API `Document.status` (snake_case values). */
+export function documentStatusLabel(status: string): string {
+  const labels: Record<string, string> = {
+    uploading: 'Uploading',
+    uploaded: 'Uploaded',
+    processing: 'Processing',
+    indexed: 'Indexed',
+    failed: 'Failed',
+    deleted: 'Deleted',
+  }
+  if (labels[status]) return labels[status]
+  return status
+    .split(/[_\s]+/)
+    .filter(Boolean)
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase())
+    .join(' ')
+}
+
 export function documentToUploadedFile(doc: DocumentResponse): UploadedFile {
   return {
     id: doc.id,
@@ -87,8 +105,8 @@ export function pendingRowFromLocalFile(
   }
 }
 
-export const statusColors: Record<FileStatus, string> = {
-  processing: 'bg-warning',
-  indexed: 'bg-success',
-  error: 'bg-error',
+export const statusBadgeClasses: Record<FileStatus, string> = {
+  processing: 'bg-warning text-white',
+  indexed: 'bg-success text-white',
+  error: 'bg-error text-white',
 }

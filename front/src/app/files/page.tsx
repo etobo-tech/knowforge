@@ -6,11 +6,12 @@ import { Loader2, Search, Upload } from 'lucide-react'
 
 import { deleteDocument, documentDownloadHref, listDocuments, type DocumentResponse } from '@/lib/api'
 import {
+  documentStatusLabel,
   formatFileSize,
   formatShortDate,
   mapDocumentStatus,
   mimeToLabel,
-  statusColors,
+  statusBadgeClasses,
   type FileStatus,
 } from '@/lib/documents'
 
@@ -192,9 +193,10 @@ export default function FilesPage() {
                         </td>
                         <td className="px-4 py-4">
                           <span
-                            className={`inline-block w-14 h-5 rounded-full ${statusColors[ui]}`}
-                            title={file.status}
-                          />
+                            className={`inline-flex h-5 w-[5.25rem] shrink-0 items-center justify-center truncate rounded-full px-1.5 text-[10px] font-semibold leading-none tracking-tight ${statusBadgeClasses[ui]}`}
+                          >
+                            {documentStatusLabel(file.status)}
+                          </span>
                         </td>
                         <td className="px-4 py-4 text-sm text-text-secondary">
                           {formatShortDate(file.created_at)}
