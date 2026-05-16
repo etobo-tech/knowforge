@@ -6,11 +6,11 @@ import { CloudUpload, Upload } from 'lucide-react'
 const ACCEPT = '.pdf,.docx,.txt,.md'
 
 type Props = {
-  isUploading: boolean
-  onFilesSelected: (files: File[]) => void
+  disabled: boolean
+  onFilesQueued: (files: File[]) => void
 }
 
-export function UploadDropzone({ isUploading, onFilesSelected }: Props) {
+export function UploadDropzone({ disabled, onFilesQueued }: Props) {
   const [isDragging, setIsDragging] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -28,13 +28,13 @@ export function UploadDropzone({ isUploading, onFilesSelected }: Props) {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files.length > 0) {
-      onFilesSelected(Array.from(e.dataTransfer.files))
+      onFilesQueued(Array.from(e.dataTransfer.files))
     }
   }
 
   const onInputChange = (files: FileList | null) => {
     if (files?.length) {
-      onFilesSelected(Array.from(files))
+      onFilesQueued(Array.from(files))
     }
     if (inputRef.current) inputRef.current.value = ''
   }
@@ -44,9 +44,9 @@ export function UploadDropzone({ isUploading, onFilesSelected }: Props) {
       onDragOver={dragOver}
       onDragLeave={dragLeave}
       onDrop={drop}
-      onClick={() => !isUploading && inputRef.current?.click()}
+      onClick={() => !disabled && inputRef.current?.click()}
       className={`border-2 border-dashed rounded-2xl p-12 text-center transition-colors ${
-        isUploading ? 'cursor-wait opacity-60' : 'cursor-pointer'
+        disabled ? 'cursor-not-allowed opacity-60' : 'cursor-pointer'
       } ${
         isDragging
           ? 'border-primary bg-primary/5'
@@ -59,19 +59,21 @@ export function UploadDropzone({ isUploading, onFilesSelected }: Props) {
         multiple
         accept={ACCEPT}
         className="hidden"
-        disabled={isUploading}
+        disabled={disabled}
         onChange={(e) => onInputChange(e.target.files)}
       />
       <CloudUpload size={40} className="mx-auto mb-4 text-text-secondary/50" />
       <p className="text-lg font-semibold text-text-primary mb-1">
-        {isUploading ? 'Uploading…' : 'Drop files here or click to upload'}
+        {disabled
+          ? 'Upload in progress…'
+          : 'Drop files here or click to add to the queue'}
       </p>
       <p className="text-sm text-text-secondary mb-5">
-        PDF, DOCX, TXT, MD &middot; Max 25 MB per file
+        PDF, DOCX, TXT, MD &middot; Max 25 MB per file &middot; Then press Upload
       </p>
       <button
         type="button"
-        disabled={isUploading}
+        disabled={disabled}
         onClick={(e) => {
           e.stopPropagation()
           inputRef.current?.click()

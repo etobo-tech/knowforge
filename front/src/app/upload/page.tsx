@@ -2,22 +2,46 @@
 
 import { useDocumentUpload } from '@/hooks/useDocumentUpload'
 
+import { StagedFilesPanel } from './StagedFilesPanel'
+import { UploadSessionPanel } from './UploadSessionPanel'
 import { UploadDropzone } from './UploadDropzone'
+import { UploadNoticeBanner } from './UploadNoticeBanner'
 import { UploadPageHeader } from './UploadPageHeader'
-import { UploadRecentList } from './UploadRecentList'
 
 export default function UploadPage() {
-  const { uploads, isUploading, uploadFiles } = useDocumentUpload()
+  const {
+    stagedFiles,
+    uploadSessionRows,
+    isUploading,
+    uploadNotice,
+    addStagedFiles,
+    removeStaged,
+    clearStaged,
+    commitStaged,
+    dismissUploadSession,
+  } = useDocumentUpload()
 
   return (
     <div className="h-full flex flex-col">
       <UploadPageHeader />
       <div className="flex-1 p-8 overflow-y-auto">
+        <UploadNoticeBanner message={uploadNotice} />
         <UploadDropzone
-          isUploading={isUploading}
-          onFilesSelected={(files) => void uploadFiles(files)}
+          disabled={isUploading}
+          onFilesQueued={(files) => void addStagedFiles(files)}
         />
-        <UploadRecentList uploads={uploads} />
+        <StagedFilesPanel
+          staged={stagedFiles}
+          isUploading={isUploading}
+          onRemove={removeStaged}
+          onUpload={() => void commitStaged()}
+          onCancelAll={clearStaged}
+        />
+        <UploadSessionPanel
+          rows={uploadSessionRows}
+          isUploading={isUploading}
+          onDismiss={dismissUploadSession}
+        />
       </div>
     </div>
   )
