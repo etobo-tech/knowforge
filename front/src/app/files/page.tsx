@@ -1,31 +1,72 @@
+'use client'
+
 import Link from 'next/link'
-import { Search, Upload } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { Loader2, Search, Upload } from 'lucide-react'
 
-type FileStatus = 'indexed' | 'error'
+import { deleteDocument, documentDownloadHref, listDocuments, type DocumentResponse } from '@/lib/api'
+import {
+  formatFileSize,
+  formatShortDate,
+  mapDocumentStatus,
+  mimeToLabel,
+  statusColors,
+  type FileStatus,
+} from '@/lib/documents'
 
-interface KBFile {
-  id: string
-  name: string
-  type: string
-  size: string
-  status: FileStatus
-  uploaded: string
-  chunks: number
-}
-
-const mockFiles: KBFile[] = [
-  { id: '1', name: 'refund_policy.pdf', type: 'PDF', size: '1.4 MB', status: 'indexed', uploaded: 'May 14', chunks: 42 },
-  { id: '2', name: 'support_faq.docx', type: 'DOCX', size: '900 KB', status: 'indexed', uploaded: 'May 14', chunks: 18 },
-  { id: '3', name: 'old_prices.xlsx', type: 'XLSX', size: '2.1 MB', status: 'error', uploaded: 'May 13', chunks: 0 },
-  { id: '4', name: 'onboarding.md', type: 'MD', size: '320 KB', status: 'indexed', uploaded: 'May 12', chunks: 9 },
-]
-
-const statusBadge: Record<FileStatus, string> = {
-  indexed: 'bg-success',
-  error: 'bg-error',
+function rowUiStatus(status: string): FileStatus {
+  return mapDocumentStatus(status)
 }
 
 export default function FilesPage() {
+  const [documents, setDocuments] = useState<DocumentResponse[] | null>(null)
+  const [loadError, setLoadError] = useState<string | null>(null)
+  const [query, setQuery] = useState('')
+  const [deletingId, setDeletingId] = useState<string | null>(null)
+
+  const load = useCallback(() => {
+    setLoadError(null)
+    setDocuments(null)
+    void listDocuments()
+      .then(setDocuments)
+      .catch(() =>
+        setLoadError(
+          'Could not load documents. Check that the API is running and try again.',
+        ),
+      )
+  }, [])
+
+  useEffect(() => {
+    load()
+  }, [load])
+
+  const filtered = useMemo(() => {
+    if (!documents) return []
+    const q = query.trim().toLowerCase()
+    if (!q) return documents
+    return documents.filter((d) => d.filename.toLowerCase().includes(q))
+  }, [documents, query])
+
+  const handleDelete = useCallback(
+    async (id: string, name: string) => {
+      if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return
+      setDeletingId(id)
+      try {
+        await deleteDocument(id)
+        setDocuments((prev) =>
+          prev ? prev.filter((d) => d.id !== id) : prev,
+        )
+      } catch {
+        window.alert('Could not delete the file. Try again.')
+      } finally {
+        setDeletingId(null)
+      }
+    },
+    [],
+  )
+
+  const loading = documents === null && !loadError
+
   return (
     <div className="h-full flex flex-col">
       <header className="px-8 py-5 border-b border-card-border bg-white">
@@ -38,9 +79,11 @@ export default function FilesPage() {
       <div className="flex-1 p-8 overflow-y-auto">
         <div className="flex items-center gap-4 mb-6">
           <div className="flex-1 flex items-center gap-3 px-4 py-2.5 bg-card-bg border border-card-border rounded-xl">
-            <Search size={16} className="text-text-secondary/50" />
+            <Search size={16} className="text-text-secondary/50 shrink-0" />
             <input
               type="text"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
               placeholder="Search files..."
               className="flex-1 bg-transparent text-sm text-text-primary placeholder:text-text-secondary/50 outline-none"
             />
@@ -54,48 +97,173 @@ export default function FilesPage() {
           </Link>
         </div>
 
-        <div className="bg-card-bg border border-card-border rounded-2xl overflow-hidden">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-card-border">
-                <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Name</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Type</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Size</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Status</th>
-                <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Uploaded</th>
-                <th className="text-center px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Chunks</th>
-                <th className="text-right px-6 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {mockFiles.map((file) => (
-                <tr key={file.id} className="border-b border-card-border last:border-b-0 hover:bg-content-bg/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-text-primary">{file.name}</span>
-                  </td>
-                  <td className="px-4 py-4 text-sm text-text-secondary">{file.type}</td>
-                  <td className="px-4 py-4 text-sm text-text-secondary">{file.size}</td>
-                  <td className="px-4 py-4">
-                    <span className={`inline-block w-14 h-5 rounded-full ${statusBadge[file.status]}`} />
-                  </td>
-                  <td className="px-4 py-4 text-sm text-text-secondary">{file.uploaded}</td>
-                  <td className="px-4 py-4 text-sm text-text-secondary text-center">{file.chunks}</td>
-                  <td className="px-6 py-4 text-right">
-                    {file.status === 'indexed' ? (
-                      <span className="text-sm text-text-secondary">
-                        <Link href={`/files/${file.id}`} className="text-primary hover:underline">View</Link>
-                        {' '}&middot;{' '}
-                        <button className="text-error hover:underline">Delete</button>
-                      </span>
-                    ) : (
-                      <button className="text-sm text-primary hover:underline">Reprocess</button>
-                    )}
-                  </td>
+        {loadError ? (
+          <div className="rounded-2xl border border-card-border bg-card-bg px-6 py-8 text-center">
+            <p className="text-sm text-text-secondary mb-4">{loadError}</p>
+            <button
+              type="button"
+              onClick={() => load()}
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-white hover:bg-primary-hover"
+            >
+              Retry
+            </button>
+          </div>
+        ) : null}
+
+        {loading ? (
+          <div className="flex flex-col items-center justify-center gap-3 py-24 text-text-secondary">
+            <Loader2 className="h-8 w-8 animate-spin text-primary" aria-hidden />
+            <p className="text-sm">Loading documents…</p>
+          </div>
+        ) : null}
+
+        {!loading && !loadError && documents?.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-card-border bg-card-bg px-6 py-16 text-center">
+            <p className="text-sm text-text-secondary mb-4">
+              No documents yet. Upload files to populate the knowledge base.
+            </p>
+            <Link
+              href="/upload"
+              className="inline-flex items-center gap-2 text-sm font-medium text-primary hover:underline"
+            >
+              <Upload size={14} />
+              Upload files
+            </Link>
+          </div>
+        ) : null}
+
+        {!loading && !loadError && documents && documents.length > 0 ? (
+          <div className="bg-card-bg border border-card-border rounded-2xl overflow-hidden">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-card-border">
+                  <th className="text-left px-6 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Name
+                  </th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Size
+                  </th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th className="text-left px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Uploaded
+                  </th>
+                  <th className="text-center px-4 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Chunks
+                  </th>
+                  <th className="text-right px-6 py-3.5 text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                    Actions
+                  </th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {filtered.length === 0 ? (
+                  <tr>
+                    <td
+                      colSpan={7}
+                      className="px-6 py-10 text-center text-sm text-text-secondary"
+                    >
+                      No files match your search.
+                    </td>
+                  </tr>
+                ) : (
+                  filtered.map((file) => {
+                    const ui = rowUiStatus(file.status)
+                    const busy = deletingId === file.id
+                    return (
+                      <tr
+                        key={file.id}
+                        className="border-b border-card-border last:border-b-0 hover:bg-content-bg/50 transition-colors"
+                      >
+                        <td className="px-6 py-4">
+                          <span className="text-sm font-semibold text-text-primary">
+                            {file.filename}
+                          </span>
+                        </td>
+                        <td className="px-4 py-4 text-sm text-text-secondary">
+                          {mimeToLabel(file.mime_type)}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-text-secondary">
+                          {formatFileSize(file.size_bytes)}
+                        </td>
+                        <td className="px-4 py-4">
+                          <span
+                            className={`inline-block w-14 h-5 rounded-full ${statusColors[ui]}`}
+                            title={file.status}
+                          />
+                        </td>
+                        <td className="px-4 py-4 text-sm text-text-secondary">
+                          {formatShortDate(file.created_at)}
+                        </td>
+                        <td className="px-4 py-4 text-sm text-text-secondary text-center">
+                          {file.chunks_count}
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          {ui === 'error' ? (
+                            <span className="text-sm text-text-secondary">
+                              <a
+                                href={documentDownloadHref(file.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Download
+                              </a>
+                              {' '}&middot;{' '}
+                              <button
+                                type="button"
+                                disabled
+                                className="text-text-secondary/50 cursor-not-allowed"
+                                title="Reprocess is not available yet"
+                              >
+                                Reprocess
+                              </button>
+                              {' '}&middot;{' '}
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() =>
+                                  void handleDelete(file.id, file.filename)
+                                }
+                                className="text-error hover:underline disabled:opacity-50"
+                              >
+                                {busy ? 'Deleting…' : 'Delete'}
+                              </button>
+                            </span>
+                          ) : (
+                            <span className="text-sm text-text-secondary">
+                              <a
+                                href={documentDownloadHref(file.id)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-primary hover:underline"
+                              >
+                                Download
+                              </a>
+                              {' '}&middot;{' '}
+                              <button
+                                type="button"
+                                disabled={busy}
+                                onClick={() => void handleDelete(file.id, file.filename)}
+                                className="text-error hover:underline disabled:opacity-50"
+                              >
+                                {busy ? 'Deleting…' : 'Delete'}
+                              </button>
+                            </span>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        ) : null}
       </div>
     </div>
   )
