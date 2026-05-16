@@ -30,6 +30,8 @@ async def upload_document(
     user_id: uuid.UUID,
     db: Session,
 ) -> tuple[Document, bool]:
+    if file.content_type is None:
+        raise ValueError("Missing content type")
     _check_content_type(file.content_type)
 
     content = await file.read()

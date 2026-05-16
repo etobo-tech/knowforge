@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, UploadFile, sta
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 
+from db.models import Document
 from db.session import get_db
 from db.repositories.documents import (
     db_delete_document,
@@ -20,12 +21,14 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 
 
 @router.get("", response_model=list[DocumentResponse])
-def list_documents(db: Session = Depends(get_db)):
+def list_documents(db: Session = Depends(get_db)) -> list[Document]:
     return db_list_documents_for_user(db, DEV_USER_ID)
 
 
 @router.get("/{document_id}/download")
-def download_document(document_id: UUID, db: Session = Depends(get_db)):
+def download_document(
+    document_id: UUID, db: Session = Depends(get_db)
+) -> RedirectResponse:
     document = db_get_document_for_user(db, DEV_USER_ID, document_id)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -40,7 +43,7 @@ def download_document(document_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.get("/{document_id}", response_model=DocumentResponse)
-def get_document(document_id: UUID, db: Session = Depends(get_db)):
+def get_document(document_id: UUID, db: Session = Depends(get_db)) -> Document:
     document = db_get_document_for_user(db, DEV_USER_ID, document_id)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -48,7 +51,9 @@ def get_document(document_id: UUID, db: Session = Depends(get_db)):
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: UUID, db: Session = Depends(get_db)):
+def delete_document(
+    document_id: UUID, db: Session = Depends(get_db)
+) -> Response:
     document = db_get_document_for_user(db, DEV_USER_ID, document_id)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
@@ -66,7 +71,7 @@ async def upload_file(
     file: UploadFile,
     response: Response,
     db: Session = Depends(get_db),
-):
+) -> Document:
     try:
         document, created = await upload_document(file, DEV_USER_ID, db)
     except ValueError as e:

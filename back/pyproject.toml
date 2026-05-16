@@ -20,4 +20,34 @@ dependencies = [
     "uvicorn>=0.47.0",
 ]
 
+[dependency-groups]
+dev = [
+    "mypy>=1.15.0",
+    "types-boto3[s3]>=1.37.0",
+]
+
+[tool.mypy]
+python_version = "3.14"
+files = ["api", "db", "rag", "main.py", "utils.py"]
+exclude = ["db/migrations/"]
+namespace_packages = true
+explicit_package_bases = true
+mypy_path = "."
+warn_return_any = true
+warn_unused_configs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+check_untyped_defs = true
+no_implicit_optional = true
+strict_equality = true
+
+[[tool.mypy.overrides]]
+module = [
+    "llama_index.*",
+    "pgvector.*",
+]
+ignore_missing_imports = true
+
+[tool.uv]
+package = false
 

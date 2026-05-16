@@ -1,11 +1,15 @@
-import boto3
-from rag.config import Config
 import functools
+from typing import cast
+
+import boto3
+from types_boto3_s3 import S3Client
+
 from db.models import Document
+from rag.config import Config
 
 
 @functools.cache
-def get_s3_client():
+def get_s3_client() -> S3Client:
     return boto3.client(
         "s3",
         region_name=Config.S3_REGION,
@@ -42,7 +46,9 @@ def presigned_download_url(
 ) -> str:
     s3 = get_s3_client()
     disposition = f'attachment; filename="{_safe_attachment_filename(download_filename)}"'
-    return s3.generate_presigned_url(
+    return cast(
+        str,
+        s3.generate_presigned_url(
         "get_object",
         Params={
             "Bucket": Config.S3_BUCKET,
@@ -50,4 +56,5 @@ def presigned_download_url(
             "ResponseContentDisposition": disposition,
         },
         ExpiresIn=expires_in,
+        ),
     )
