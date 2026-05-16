@@ -22,10 +22,29 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "httpx>=0.28.0",
+    "moto[s3]>=5.0.0",
     "mypy>=1.15.0",
+    "pytest-asyncio>=0.25.0",
+    "pytest-cov>=6.0.0",
+    "pytest>=8.3.0",
     "ruff>=0.11.0",
     "types-boto3[s3]>=1.37.0",
 ]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+asyncio_mode = "auto"
+filterwarnings = ["ignore::DeprecationWarning"]
+
+[tool.coverage.run]
+source = ["api", "db", "rag", "main.py", "utils.py"]
+omit = ["db/migrations/*"]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
 
 [tool.ruff]
 target-version = "py314"
