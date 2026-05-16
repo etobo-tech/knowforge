@@ -51,9 +51,7 @@ def get_document(document_id: UUID, db: Session = Depends(get_db)) -> Document:
 
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(
-    document_id: UUID, db: Session = Depends(get_db)
-) -> Response:
+def delete_document(document_id: UUID, db: Session = Depends(get_db)) -> Response:
     document = db_get_document_for_user(db, DEV_USER_ID, document_id)
     if document is None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")

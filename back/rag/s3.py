@@ -45,16 +45,18 @@ def presigned_download_url(
     expires_in: int = 300,
 ) -> str:
     s3 = get_s3_client()
-    disposition = f'attachment; filename="{_safe_attachment_filename(download_filename)}"'
+    disposition = (
+        f'attachment; filename="{_safe_attachment_filename(download_filename)}"'
+    )
     return cast(
         str,
         s3.generate_presigned_url(
-        "get_object",
-        Params={
-            "Bucket": Config.S3_BUCKET,
-            "Key": s3_key,
-            "ResponseContentDisposition": disposition,
-        },
-        ExpiresIn=expires_in,
+            "get_object",
+            Params={
+                "Bucket": Config.S3_BUCKET,
+                "Key": s3_key,
+                "ResponseContentDisposition": disposition,
+            },
+            ExpiresIn=expires_in,
         ),
     )
