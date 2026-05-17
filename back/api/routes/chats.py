@@ -23,6 +23,8 @@ from db.session import get_db
 
 DEV_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
 
+ASSISTANT_PLACEHOLDER = "Pending to implement"
+
 router = APIRouter(prefix="/chats", tags=["chats"])
 
 
@@ -95,6 +97,7 @@ def append_message(
         )
 
     db_append_message(db, chat, MessageRole.USER, content)
+    db_append_message(db, chat, MessageRole.ASSISTANT, ASSISTANT_PLACEHOLDER)
     chat = db_get_chat_for_user(db, DEV_USER_ID, chat_id)
     assert chat is not None
     return _chat_detail(chat)
