@@ -7,7 +7,9 @@ import {
   appendChatMessage,
   createChat,
   formatNewChatTitle,
+  getCachedChat,
   getChat,
+  notifyChatsUpdated,
   type ChatDetailResponse,
   type MessageResponse,
 } from '@/lib/api'
@@ -87,6 +89,15 @@ export function ChatView({ initialChatId }: Props) {
 
   useEffect(() => {
     if (!initialChatId) return
+
+    const cached = getCachedChat(initialChatId)
+    if (cached) {
+      applyChat(cached)
+      setIsLoading(false)
+      setError(null)
+      return
+    }
+
     let cancelled = false
     setIsLoading(true)
     setError(null)
@@ -146,6 +157,7 @@ export function ChatView({ initialChatId }: Props) {
       }
       const updated = await appendChatMessage(activeChatId, content)
       applyChat(updated)
+      notifyChatsUpdated()
     } catch {
       setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
       setMessage(content)
