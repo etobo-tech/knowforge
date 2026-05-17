@@ -46,7 +46,7 @@ def create_chat(
     body: ChatCreateRequest | None = None,
     db: Session = Depends(get_db),
 ) -> ChatDetailResponse:
-    title = (body.title if body and body.title else None) or "New chat"
+    title = body.title if body and body.title else None
     chat = db_create_chat(db, DEV_USER_ID, title=title)
     return _chat_detail(chat)
 

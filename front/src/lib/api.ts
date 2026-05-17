@@ -10,6 +10,33 @@ export type DocumentResponse = {
   indexed_at?: string | null
 }
 
+export type MessageResponse = {
+  id: string
+  role: string
+  content: string
+  created_at: string
+  sources: unknown[]
+}
+
+export type ChatDetailResponse = {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+  messages: MessageResponse[]
+}
+
+/** e.g. `2026-05-16 14:30-New chat` */
+export function formatNewChatTitle(now: Date = new Date()): string {
+  const pad = (n: number) => String(n).padStart(2, '0')
+  const y = now.getFullYear()
+  const mo = pad(now.getMonth() + 1)
+  const d = pad(now.getDate())
+  const h = pad(now.getHours())
+  const min = pad(now.getMinutes())
+  return `${y}-${mo}-${d} ${h}:${min}-New chat`
+}
+
 const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
 
 async function parseJsonError(response: Response): Promise<string | null> {
@@ -72,4 +99,38 @@ export async function uploadDocument(
     document: (await response.json()) as DocumentResponse,
     created: response.status === 201,
   }
+}
+
+export async function createChat(title: string): Promise<ChatDetailResponse> {
+  const response = await fetch(`${API_BASE}/api/chats`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ title }),
+    cache: 'no-store',
+  })
+  if (!response.ok) {
+    const detail = await parseJsonError(response)
+    throw new Error(detail ?? `Failed to create chat (${response.status})`)
+  }
+  return (await response.json()) as ChatDetailResponse
+}
+
+export async function appendChatMessage(
+  chatId: string,
+  content: string,
+): Promise<ChatDetailResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      cache: 'no-store',
+    },
+  )
+  if (!response.ok) {
+    const detail = await parseJsonError(response)
+    throw new Error(detail ?? `Failed to send message (${response.status})`)
+  }
+  return (await response.json()) as ChatDetailResponse
 }
