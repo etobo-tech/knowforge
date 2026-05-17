@@ -43,11 +43,10 @@ def _chat_detail(chat: Chat) -> ChatDetailResponse:
 
 @router.post("", response_model=ChatDetailResponse, status_code=status.HTTP_201_CREATED)
 def create_chat(
-    body: ChatCreateRequest | None = None,
+    body: ChatCreateRequest,
     db: Session = Depends(get_db),
 ) -> ChatDetailResponse:
-    title = body.title if body and body.title else None
-    chat = db_create_chat(db, DEV_USER_ID, title=title)
+    chat = db_create_chat(db, DEV_USER_ID, title=body.title)
     return _chat_detail(chat)
 
 
