@@ -37,13 +37,14 @@ def test_create_list_get_update_and_append_message(client: TestClient) -> None:
     )
     assert appended.status_code == 200
     messages = appended.json()["messages"]
-    assert len(messages) == 1
+    assert len(messages) == 2
     assert messages[0]["role"] == "user"
     assert messages[0]["content"] == "What is the refund policy?"
-    assert messages[0]["sources"] == []
+    assert messages[1]["role"] == "assistant"
+    assert messages[1]["content"] == "Pending to implement"
 
     detail_after = client.get(f"/api/chats/{chat_id}")
-    assert len(detail_after.json()["messages"]) == 1
+    assert len(detail_after.json()["messages"]) == 2
 
 
 def test_create_chat_requires_title(client: TestClient) -> None:

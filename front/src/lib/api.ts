@@ -101,6 +101,19 @@ export async function uploadDocument(
   }
 }
 
+export async function getChat(chatId: string): Promise<ChatDetailResponse | null> {
+  const response = await fetch(
+    `${API_BASE}/api/chats/${encodeURIComponent(chatId)}`,
+    { cache: 'no-store' },
+  )
+  if (response.status === 404) return null
+  if (!response.ok) {
+    const detail = await parseJsonError(response)
+    throw new Error(detail ?? `Failed to load chat (${response.status})`)
+  }
+  return (await response.json()) as ChatDetailResponse
+}
+
 export async function createChat(title: string): Promise<ChatDetailResponse> {
   const response = await fetch(`${API_BASE}/api/chats`, {
     method: 'POST',
