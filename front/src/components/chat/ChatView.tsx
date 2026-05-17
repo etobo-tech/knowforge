@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { ArrowRight, Loader2 } from 'lucide-react'
 
 import {
@@ -21,6 +21,26 @@ const suggestions = [
 
 type Props = {
   initialChatId?: string
+}
+
+function TypingBubble() {
+  return (
+    <div className="flex justify-start">
+      <div
+        className="max-w-[min(85%,28rem)] rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 shadow-sm"
+        aria-label="Knowforge is typing"
+      >
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+          Knowforge
+        </p>
+        <div className="flex items-center gap-1 py-0.5">
+          <span className="h-2 w-2 rounded-full bg-text-secondary/45 animate-bounce [animation-delay:0ms]" />
+          <span className="h-2 w-2 rounded-full bg-text-secondary/45 animate-bounce [animation-delay:150ms]" />
+          <span className="h-2 w-2 rounded-full bg-text-secondary/45 animate-bounce [animation-delay:300ms]" />
+        </div>
+      </div>
+    </div>
+  )
 }
 
 function MessageBubble({ msg }: { msg: MessageResponse }) {
@@ -52,10 +72,12 @@ export function ChatView({ initialChatId }: Props) {
   const [messages, setMessages] = useState<MessageResponse[]>([])
   const [message, setMessage] = useState('')
   const [isSending, setIsSending] = useState(false)
+  const [isAwaitingReply, setIsAwaitingReply] = useState(false)
   const [isLoading, setIsLoading] = useState(Boolean(initialChatId))
   const [error, setError] = useState<string | null>(null)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  const hasConversation = messages.length > 0
+  const hasConversation = messages.length > 0 || isAwaitingReply
 
   const applyChat = useCallback((chat: ChatDetailResponse) => {
     setChatId(chat.id)
@@ -90,12 +112,29 @@ export function ChatView({ initialChatId }: Props) {
     }
   }, [initialChatId, applyChat])
 
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
+  }, [messages, isAwaitingReply])
+
   const handleSend = useCallback(async () => {
     const content = message.trim()
     if (!content || isSending) return
 
+    const optimisticId = `pending-${crypto.randomUUID()}`
+    const optimisticUser: MessageResponse = {
+      id: optimisticId,
+      role: 'user',
+      content,
+      created_at: new Date().toISOString(),
+      sources: [],
+    }
+
+    setMessages((prev) => [...prev, optimisticUser])
+    setMessage('')
     setIsSending(true)
+    setIsAwaitingReply(true)
     setError(null)
+
     try {
       let activeChatId = chatId
       if (!activeChatId) {
@@ -107,11 +146,13 @@ export function ChatView({ initialChatId }: Props) {
       }
       const updated = await appendChatMessage(activeChatId, content)
       applyChat(updated)
-      setMessage('')
     } catch {
+      setMessages((prev) => prev.filter((m) => m.id !== optimisticId))
+      setMessage(content)
       setError('Could not send your message. Check that the API is running and try again.')
     } finally {
       setIsSending(false)
+      setIsAwaitingReply(false)
     }
   }, [message, isSending, chatId, applyChat])
 
@@ -136,12 +177,9 @@ export function ChatView({ initialChatId }: Props) {
         disabled={isSending || isLoading || !message.trim()}
         onClick={() => void handleSend()}
         className="w-9 h-9 flex items-center justify-center bg-primary hover:bg-primary-hover text-white rounded-full transition-colors shrink-0 disabled:opacity-50"
+        aria-label="Send message"
       >
-        {isSending ? (
-          <Loader2 size={16} className="animate-spin" aria-hidden />
-        ) : (
-          <ArrowRight size={16} />
-        )}
+        <ArrowRight size={16} />
       </button>
     </div>
   )
@@ -199,6 +237,8 @@ export function ChatView({ initialChatId }: Props) {
               {messages.map((msg) => (
                 <MessageBubble key={msg.id} msg={msg} />
               ))}
+              {isAwaitingReply ? <TypingBubble /> : null}
+              <div ref={messagesEndRef} />
             </div>
           </div>
           <div className="max-w-3xl mx-auto w-full shrink-0">{composer}</div>
