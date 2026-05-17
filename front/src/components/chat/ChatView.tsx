@@ -23,6 +23,29 @@ type Props = {
   initialChatId?: string
 }
 
+function MessageBubble({ msg }: { msg: MessageResponse }) {
+  const isUser = msg.role === 'user'
+
+  return (
+    <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
+      <div
+        className={`max-w-[min(85%,28rem)] ${
+          isUser
+            ? 'rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
+            : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
+        }`}
+      >
+        {!isUser ? (
+          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+            Knowforge
+          </p>
+        ) : null}
+        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+      </div>
+    </div>
+  )
+}
+
 export function ChatView({ initialChatId }: Props) {
   const [chatId, setChatId] = useState<string | null>(initialChatId ?? null)
   const [title, setTitle] = useState('New chat')
@@ -172,20 +195,9 @@ export function ChatView({ initialChatId }: Props) {
       ) : (
         <div className="flex-1 flex flex-col min-h-0 p-8">
           <div className="flex-1 overflow-y-auto mb-6">
-            <div className="max-w-3xl mx-auto space-y-8">
+            <div className="max-w-3xl mx-auto space-y-4 px-1">
               {messages.map((msg) => (
-                <div key={msg.id}>
-                  <p
-                    className={`text-xs font-semibold uppercase tracking-wider mb-2 ${
-                      msg.role === 'user' ? 'text-text-primary' : 'text-primary'
-                    }`}
-                  >
-                    {msg.role === 'user' ? 'You' : 'Knowforge'}
-                  </p>
-                  <div className="bg-content-bg rounded-xl px-5 py-4 text-sm leading-relaxed text-text-primary">
-                    {msg.content}
-                  </div>
-                </div>
+                <MessageBubble key={msg.id} msg={msg} />
               ))}
             </div>
           </div>
