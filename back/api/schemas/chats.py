@@ -1,11 +1,19 @@
 from datetime import datetime
 from uuid import UUID
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ChatCreateRequest(BaseModel):
-    title: str | None = Field(default=None, max_length=500)
+    title: str = Field(min_length=1, max_length=500)
+
+    @field_validator("title")
+    @classmethod
+    def title_not_blank(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("title cannot be empty")
+        return stripped
 
 
 class ChatUpdateRequest(BaseModel):

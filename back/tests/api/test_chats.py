@@ -4,21 +4,21 @@ from fastapi.testclient import TestClient
 
 
 def test_create_list_get_update_and_append_message(client: TestClient) -> None:
-    created = client.post("/api/chats", json={})
+    created = client.post("/api/chats", json={"title": "First chat"})
     assert created.status_code == 201
     chat_id = created.json()["id"]
-    assert created.json()["title"] == "New chat"
+    assert created.json()["title"] == "First chat"
     assert created.json()["messages"] == []
 
-    with_title = client.post("/api/chats", json={"title": "Refund questions"})
-    assert with_title.status_code == 201
-    assert with_title.json()["title"] == "Refund questions"
+    second = client.post("/api/chats", json={"title": "Refund questions"})
+    assert second.status_code == 201
+    assert second.json()["title"] == "Refund questions"
 
     listed = client.get("/api/chats")
     assert listed.status_code == 200
     listed_ids = {item["id"] for item in listed.json()}
     assert len(listed_ids) == 2
-    assert with_title.json()["id"] in listed_ids
+    assert second.json()["id"] in listed_ids
     assert chat_id in listed_ids
 
     detail = client.get(f"/api/chats/{chat_id}")
@@ -46,8 +46,14 @@ def test_create_list_get_update_and_append_message(client: TestClient) -> None:
     assert len(detail_after.json()["messages"]) == 1
 
 
+def test_create_chat_requires_title(client: TestClient) -> None:
+    assert client.post("/api/chats", json={}).status_code == 422
+    assert client.post("/api/chats", json={"title": ""}).status_code == 422
+    assert client.post("/api/chats", json={"title": "   "}).status_code == 422
+
+
 def test_append_message_rejects_empty_content(client: TestClient) -> None:
-    chat_id = client.post("/api/chats").json()["id"]
+    chat_id = client.post("/api/chats", json={"title": "Test chat"}).json()["id"]
 
     response = client.post(
         f"/api/chats/{chat_id}/messages",
