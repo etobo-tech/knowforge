@@ -20,6 +20,10 @@ class Config:
 
     OPENAI_API_KEY = _get_env("OPENAI_API_KEY")
     EMBEDDING_MODEL = "text-embedding-3-small"
+    EMBEDDING_DIMENSION = 1536
+    VECTOR_TABLE_NAME = "knowforge_vectors"
+    CHAT_MODEL = "gpt-4o-mini"
+    TOP_K = 5
     CHUNK_SIZE = 1024
     CHUNK_OVERLAP = 200
 
