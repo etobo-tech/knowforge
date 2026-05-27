@@ -18,12 +18,36 @@ export type MessageResponse = {
   sources: unknown[]
 }
 
+export type ChatSummaryResponse = {
+  id: string
+  title: string
+  created_at: string
+  updated_at: string
+}
+
 export type ChatDetailResponse = {
   id: string
   title: string
   created_at: string
   updated_at: string
   messages: MessageResponse[]
+}
+
+import {
+  getCachedChat,
+  getCachedChatList,
+  invalidateChatListCache,
+  setCachedChat,
+  setCachedChatList,
+} from '@/lib/chatCache'
+
+export { getCachedChat, getCachedChatList } from '@/lib/chatCache'
+
+export const CHATS_UPDATED_EVENT = 'knowforge:chats-updated'
+
+export function notifyChatsUpdated(): void {
+  invalidateChatListCache()
+  window.dispatchEvent(new Event(CHATS_UPDATED_EVENT))
 }
 
 /** e.g. `2026-05-16 14:30-New chat` */
@@ -101,7 +125,33 @@ export async function uploadDocument(
   }
 }
 
-export async function getChat(chatId: string): Promise<ChatDetailResponse | null> {
+export async function listChats(options?: {
+  force?: boolean
+}): Promise<ChatSummaryResponse[]> {
+  if (!options?.force) {
+    const cached = getCachedChatList()
+    if (cached) return cached
+  }
+
+  const response = await fetch(`${API_BASE}/api/chats`, { cache: 'no-store' })
+  if (!response.ok) {
+    const detail = await parseJsonError(response)
+    throw new Error(detail ?? `Failed to list chats (${response.status})`)
+  }
+  const items = (await response.json()) as ChatSummaryResponse[]
+  setCachedChatList(items)
+  return items
+}
+
+export async function getChat(
+  chatId: string,
+  options?: { force?: boolean },
+): Promise<ChatDetailResponse | null> {
+  if (!options?.force) {
+    const cached = getCachedChat(chatId)
+    if (cached) return cached
+  }
+
   const response = await fetch(
     `${API_BASE}/api/chats/${encodeURIComponent(chatId)}`,
     { cache: 'no-store' },
@@ -111,7 +161,9 @@ export async function getChat(chatId: string): Promise<ChatDetailResponse | null
     const detail = await parseJsonError(response)
     throw new Error(detail ?? `Failed to load chat (${response.status})`)
   }
-  return (await response.json()) as ChatDetailResponse
+  const chat = (await response.json()) as ChatDetailResponse
+  setCachedChat(chat)
+  return chat
 }
 
 export async function createChat(title: string): Promise<ChatDetailResponse> {
@@ -125,7 +177,10 @@ export async function createChat(title: string): Promise<ChatDetailResponse> {
     const detail = await parseJsonError(response)
     throw new Error(detail ?? `Failed to create chat (${response.status})`)
   }
-  return (await response.json()) as ChatDetailResponse
+  const chat = (await response.json()) as ChatDetailResponse
+  setCachedChat(chat)
+  invalidateChatListCache()
+  return chat
 }
 
 export async function appendChatMessage(
@@ -145,5 +200,8 @@ export async function appendChatMessage(
     const detail = await parseJsonError(response)
     throw new Error(detail ?? `Failed to send message (${response.status})`)
   }
-  return (await response.json()) as ChatDetailResponse
+  const chat = (await response.json()) as ChatDetailResponse
+  setCachedChat(chat)
+  invalidateChatListCache()
+  return chat
 }
