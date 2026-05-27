@@ -67,6 +67,22 @@ def fake_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
     )
 
 
+@pytest.fixture(autouse=True)
+def fake_chat_reply(monkeypatch: pytest.MonkeyPatch) -> None:
+    from rag.query.types import ChatReply
+
+    def _fake_generate_chat_reply(db, user_id, chat, user_message: str) -> ChatReply:
+        return ChatReply(
+            content=f"Test reply to: {user_message}",
+            sources=[],
+        )
+
+    monkeypatch.setattr(
+        "db.services.chat_messages.generate_chat_reply",
+        _fake_generate_chat_reply,
+    )
+
+
 @pytest.fixture
 def s3_mock() -> Generator[None, None, None]:
     get_s3_client.cache_clear()
