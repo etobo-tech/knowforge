@@ -23,6 +23,7 @@ from db.base import Base  # noqa: E402
 from rag.config import Config  # noqa: E402
 from rag.s3 import get_s3_client  # noqa: E402
 from tests.helpers.embeddings import deterministic_embeddings  # noqa: E402
+from tests.helpers.vector_store import patch_vector_store, reset_fake_vector_store  # noqa: E402
 
 db_models.DocumentChunk.__table__.c.embedding.type = JSON()
 db_models.MessageSource.__table__.c.metadata.type = JSON()
@@ -46,6 +47,12 @@ def db_session(engine: Any) -> Generator[Session, None, None]:
     yield session
     session.rollback()
     session.close()
+
+
+@pytest.fixture(autouse=True)
+def fake_vector_store(monkeypatch: pytest.MonkeyPatch) -> None:
+    reset_fake_vector_store()
+    patch_vector_store(monkeypatch)
 
 
 @pytest.fixture(autouse=True)
