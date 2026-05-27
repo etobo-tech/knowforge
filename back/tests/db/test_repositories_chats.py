@@ -23,7 +23,6 @@ def test_chat_repository_lifecycle(db_session: Session) -> None:
     loaded = db_get_chat_for_user(db_session, DEV_USER_ID, chat.id)
 
     assert len(listed) == 1
-    assert loaded is not None
     assert len(loaded.messages) == 1
     assert loaded.messages[0].role == MessageRole.USER
 

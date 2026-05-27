@@ -11,19 +11,17 @@ from api.schemas.chats import (
     MessageCreateRequest,
     MessageResponse,
 )
-from db.models import Chat, MessageRole
+from db.models import Chat
 from db.repositories.chats import (
-    db_append_message,
     db_create_chat,
     db_get_chat_for_user,
     db_list_chats_for_user,
     db_update_chat_title,
 )
+from db.services.chat_messages import process_incoming_message
 from db.session import get_db
 
 DEV_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
-
-ASSISTANT_PLACEHOLDER = "Pending to implement"
 
 router = APIRouter(prefix="/chats", tags=["chats"])
 
@@ -61,8 +59,6 @@ def list_chats(db: Session = Depends(get_db)) -> list[ChatSummaryResponse]:
 @router.get("/{chat_id}", response_model=ChatDetailResponse)
 def get_chat(chat_id: UUID, db: Session = Depends(get_db)) -> ChatDetailResponse:
     chat = db_get_chat_for_user(db, DEV_USER_ID, chat_id)
-    if chat is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     return _chat_detail(chat)
 
 
@@ -73,8 +69,6 @@ def update_chat(
     db: Session = Depends(get_db),
 ) -> ChatDetailResponse:
     chat = db_get_chat_for_user(db, DEV_USER_ID, chat_id)
-    if chat is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
     chat = db_update_chat_title(db, chat, body.title.strip())
     return _chat_detail(chat)
 
@@ -85,19 +79,11 @@ def append_message(
     body: MessageCreateRequest,
     db: Session = Depends(get_db),
 ) -> ChatDetailResponse:
-    chat = db_get_chat_for_user(db, DEV_USER_ID, chat_id)
-    if chat is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Not found")
-
-    content = body.content.strip()
-    if not content:
+    user_message = body.content.strip()
+    if not user_message:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Message content cannot be empty",
+            status_code=status.HTTP_400_BAD_REQUEST, detail="Empty message"
         )
 
-    db_append_message(db, chat, MessageRole.USER, content)
-    db_append_message(db, chat, MessageRole.ASSISTANT, ASSISTANT_PLACEHOLDER)
-    chat = db_get_chat_for_user(db, DEV_USER_ID, chat_id)
-    assert chat is not None
+    chat = process_incoming_message(db, DEV_USER_ID, chat_id, user_message)
     return _chat_detail(chat)

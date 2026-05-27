@@ -41,7 +41,7 @@ def test_create_list_get_update_and_append_message(client: TestClient) -> None:
     assert messages[0]["role"] == "user"
     assert messages[0]["content"] == "What is the refund policy?"
     assert messages[1]["role"] == "assistant"
-    assert messages[1]["content"] == "Pending to implement"
+    assert messages[1]["content"] == "Test reply to: What is the refund policy?"
 
     detail_after = client.get(f"/api/chats/{chat_id}")
     assert len(detail_after.json()["messages"]) == 2
