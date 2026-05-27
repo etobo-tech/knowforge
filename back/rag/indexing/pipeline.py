@@ -9,20 +9,25 @@ from db.repositories.documents import (
 from rag.indexing.chunk import chunk_text
 from rag.indexing.embed import embed_texts
 from rag.indexing.extract import extract_text
+from rag.vector_store import sync_indexed_document_vectors
 
 
-def index_document(db: Session, document: Document, content: bytes) -> None:
+def index_document(db: Session, document: Document, content: bytes) -> bool:
+    """Index document content. Returns False if indexing failed (status=FAILED)."""
     if document.status == DocumentStatus.INDEXED:
-        return
+        return True
 
     db_begin_indexing(db, document)
 
     try:
         text = extract_text(content, document.mime_type)
-        chunks = chunk_text(text)
-        embeddings = embed_texts(chunks)
-        chunk_data = list(zip(chunks, embeddings, strict=True))
-        db_save_indexed_chunks(db, document, chunk_data)
+        chunk_texts = chunk_text(text)
+        embeddings = embed_texts(chunk_texts)
+        db_save_indexed_chunks(db, document, chunk_texts)
+        db.refresh(document)
+        sync_indexed_document_vectors(db, document, embeddings)
+        return True
     except Exception as exc:
         db_mark_indexing_failed(db, document, str(exc))
-        raise
+        db.refresh(document)
+        return False

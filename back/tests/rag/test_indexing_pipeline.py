@@ -59,9 +59,9 @@ def test_index_document_marks_failed_on_unsupported_mime(db_session: Session) ->
     db_persist_new_document(db_session, document)
     db_mark_uploaded(db_session, document)
 
-    with pytest.raises(ValueError, match="No text extractor"):
-        index_document(db_session, document, b"data")
+    ok = index_document(db_session, document, b"data")
 
+    assert ok is False
     db_session.refresh(document)
     assert document.status == DocumentStatus.FAILED
     assert document.error_message is not None
