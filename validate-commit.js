@@ -24,6 +24,7 @@ const MAX_LINE_LENGTH = 100;
 const VALID_MODULES = [
   'all',
   "api",
+  "back",
   'cross',
   'views',
   "rag",
