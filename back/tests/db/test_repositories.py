@@ -16,7 +16,6 @@ from db.repositories.documents import (
     db_save_indexed_chunks,
 )
 from tests.helpers.constants import DEV_USER_ID
-from tests.helpers.embeddings import deterministic_embeddings
 
 
 def _persist_document(
@@ -73,11 +72,7 @@ def test_db_save_indexed_chunks_replaces_previous_chunks(db_session: Session) ->
     document = _persist_document(db_session)
     db_mark_uploaded(db_session, document)
     db_begin_indexing(db_session, document)
-    chunk_data = list(
-        zip(["one", "two"], deterministic_embeddings(["one", "two"]), strict=True)
-    )
-
-    indexed = db_save_indexed_chunks(db_session, document, chunk_data)
+    indexed = db_save_indexed_chunks(db_session, document, ["one", "two"])
 
     assert indexed.status == DocumentStatus.INDEXED
     assert indexed.chunks_count == 2

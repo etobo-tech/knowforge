@@ -6,8 +6,15 @@ from sqlalchemy.orm import Session
 from db.factories.documents import build_document
 from db.models import Document, DocumentStatus
 from db.repositories.documents import db_mark_uploaded, db_persist_new_document
+from rag.indexing.errors import public_indexing_error_message
 from rag.indexing.pipeline import index_document
 from rag.s3 import upload_document_to_s3
+
+
+def _index_or_raise(db: Session, document: Document, content: bytes) -> None:
+    if index_document(db, document, content):
+        return
+    raise ValueError(public_indexing_error_message(document.error_message))
 
 
 def handle_existing_document(
@@ -23,7 +30,7 @@ def handle_existing_document(
         db_mark_uploaded(db, existing_document)
 
     if existing_document.status != DocumentStatus.INDEXED:
-        index_document(db, existing_document, content)
+        _index_or_raise(db, existing_document, content)
 
     return existing_document, False
 
@@ -53,6 +60,6 @@ def handle_new_document(
         raise
 
     db_mark_uploaded(db, document)
-    index_document(db, document, content)
+    _index_or_raise(db, document, content)
 
     return document, True
