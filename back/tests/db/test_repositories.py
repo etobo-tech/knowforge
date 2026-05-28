@@ -7,6 +7,7 @@ from db.models import Document, DocumentStatus
 from db.repositories.documents import (
     db_begin_indexing,
     db_delete_document,
+    db_filter_valid_source_refs,
     db_find_by_user_and_content_hash,
     db_get_document_for_user,
     db_list_documents_for_user,
@@ -15,6 +16,7 @@ from db.repositories.documents import (
     db_persist_new_document,
     db_save_indexed_chunks,
 )
+from rag.query.types import SourceRef
 from tests.helpers.constants import DEV_USER_ID
 
 
@@ -78,6 +80,39 @@ def test_db_save_indexed_chunks_replaces_previous_chunks(db_session: Session) ->
     assert indexed.chunks_count == 2
     assert indexed.indexed_at is not None
     assert len(indexed.chunks) == 2
+
+
+def test_db_filter_valid_source_refs_drops_stale_chunks(db_session: Session) -> None:
+    document = _persist_document(
+        db_session, content_hash="hash-sources", filename="sources.txt"
+    )
+    db_mark_uploaded(db_session, document)
+    db_begin_indexing(db_session, document)
+    indexed = db_save_indexed_chunks(db_session, document, ["chunk one"])
+    valid_chunk_id = indexed.chunks[0].id
+    stale_chunk_id = uuid4()
+
+    filtered = db_filter_valid_source_refs(
+        db_session,
+        DEV_USER_ID,
+        [
+            SourceRef(
+                document_id=document.id,
+                chunk_id=valid_chunk_id,
+                score=0.9,
+                quoted_text="valid",
+            ),
+            SourceRef(
+                document_id=document.id,
+                chunk_id=stale_chunk_id,
+                score=0.8,
+                quoted_text="stale",
+            ),
+        ],
+    )
+
+    assert len(filtered) == 1
+    assert filtered[0].chunk_id == valid_chunk_id
 
 
 def test_db_mark_indexing_failed_truncates_message(db_session: Session) -> None:

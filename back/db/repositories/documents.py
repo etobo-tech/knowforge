@@ -6,6 +6,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from db.models import Document, DocumentChunk, DocumentStatus
+from rag.query.types import SourceRef
 
 logger = logging.getLogger(__name__)
 
@@ -69,6 +70,31 @@ def db_mark_indexing_failed(db: Session, document: Document, message: str) -> Do
     db.commit()
     db.refresh(document)
     return document
+
+
+def db_filter_valid_source_refs(
+    db: Session,
+    user_id: UUID,
+    sources: list[SourceRef],
+) -> list[SourceRef]:
+    if not sources:
+        return []
+
+    chunk_ids = [source.chunk_id for source in sources]
+    rows = db.execute(
+        select(DocumentChunk.id, DocumentChunk.document_id)
+        .join(Document, DocumentChunk.document_id == Document.id)
+        .where(
+            Document.user_id == user_id,
+            DocumentChunk.id.in_(chunk_ids),
+        )
+    ).all()
+    valid_pairs = {(row.id, row.document_id) for row in rows}
+    return [
+        source
+        for source in sources
+        if (source.chunk_id, source.document_id) in valid_pairs
+    ]
 
 
 def db_user_has_indexed_chunks(db: Session, user_id: UUID) -> bool:
