@@ -1,11 +1,12 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowRight, Loader2 } from 'lucide-react'
+import { ArrowRight, Loader2, Trash2 } from 'lucide-react'
 
 import {
   appendChatMessage,
   createChat,
+  deleteChatMessage,
   formatNewChatTitle,
   getCachedChat,
   getChat,
@@ -45,24 +46,54 @@ function TypingBubble() {
   )
 }
 
-function MessageBubble({ msg }: { msg: MessageResponse }) {
+function MessageBubble({
+  msg,
+  onDelete,
+  isDeleting,
+}: {
+  msg: MessageResponse
+  onDelete?: (messageId: string) => void
+  isDeleting?: boolean
+}) {
   const isUser = msg.role === 'user'
+  const canDelete = isUser && !msg.id.startsWith('pending-') && onDelete
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[min(85%,28rem)] ${
-          isUser
-            ? 'rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
-            : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
+        className={`group flex max-w-[min(85%,28rem)] flex-col ${
+          isUser ? 'items-end' : 'items-start'
         }`}
       >
-        {!isUser ? (
-          <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
-            Knowforge
-          </p>
+        <div
+          className={
+            isUser
+              ? 'rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
+              : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
+          }
+        >
+          {!isUser ? (
+            <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
+              Knowforge
+            </p>
+          ) : null}
+          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+        </div>
+        {canDelete ? (
+          <button
+            type="button"
+            onClick={() => onDelete(msg.id)}
+            disabled={isDeleting}
+            className="mt-1 flex items-center justify-center p-1 text-text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary disabled:opacity-50"
+            aria-label="Delete message"
+          >
+            {isDeleting ? (
+              <Loader2 size={14} className="animate-spin" />
+            ) : (
+              <Trash2 size={14} />
+            )}
+          </button>
         ) : null}
-        <p className="whitespace-pre-wrap break-words">{msg.content}</p>
       </div>
     </div>
   )
@@ -76,6 +107,7 @@ export function ChatView({ initialChatId }: Props) {
   const [isSending, setIsSending] = useState(false)
   const [isAwaitingReply, setIsAwaitingReply] = useState(false)
   const [isLoading, setIsLoading] = useState(Boolean(initialChatId))
+  const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
@@ -168,6 +200,29 @@ export function ChatView({ initialChatId }: Props) {
     }
   }, [message, isSending, chatId, applyChat])
 
+  const handleDeleteMessage = useCallback(
+    async (messageId: string) => {
+      if (!chatId || deletingMessageId || isSending || isAwaitingReply) return
+
+      setDeletingMessageId(messageId)
+      setError(null)
+
+      try {
+        await deleteChatMessage(chatId, messageId)
+        const updated = await getChat(chatId, { force: true })
+        if (updated) {
+          applyChat(updated)
+        }
+        notifyChatsUpdated()
+      } catch {
+        setError('Could not delete the message. Try again.')
+      } finally {
+        setDeletingMessageId(null)
+      }
+    },
+    [chatId, deletingMessageId, isSending, isAwaitingReply, applyChat],
+  )
+
   const composer = (
     <div className="flex items-center gap-3 px-5 py-3 bg-content-bg border border-card-border rounded-full">
       <input
@@ -247,7 +302,12 @@ export function ChatView({ initialChatId }: Props) {
           <div className="flex-1 overflow-y-auto mb-6">
             <div className="max-w-3xl mx-auto space-y-4 px-1">
               {messages.map((msg) => (
-                <MessageBubble key={msg.id} msg={msg} />
+                <MessageBubble
+                  key={msg.id}
+                  msg={msg}
+                  onDelete={handleDeleteMessage}
+                  isDeleting={deletingMessageId === msg.id}
+                />
               ))}
               {isAwaitingReply ? <TypingBubble /> : null}
               <div ref={messagesEndRef} />
