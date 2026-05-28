@@ -61,6 +61,25 @@ def test_sources_from_nodes_skips_duplicates_and_missing_metadata() -> None:
     assert sources[0].score == 0.75
 
 
+def test_sources_from_nodes_skips_invalid_uuids() -> None:
+    sources = service._sources_from_nodes(
+        [
+            NodeWithScore(
+                node=TextNode(
+                    text="bad ids",
+                    metadata={
+                        "document_id": "not-a-uuid",
+                        "chunk_id": "also-not-a-uuid",
+                    },
+                ),
+                score=0.5,
+            )
+        ]
+    )
+
+    assert sources == []
+
+
 def test_build_memory_keeps_user_and_assistant_messages() -> None:
     messages = [
         Message(
@@ -129,6 +148,11 @@ def test_generate_chat_reply_returns_content_and_sources(
     monkeypatch.setattr(service, "_configure_llama_index", lambda: None)
     monkeypatch.setattr(service, "create_user_retriever", lambda user_id: object())
     monkeypatch.setattr(
+        service,
+        "db_filter_valid_source_refs",
+        lambda db, user_id, sources: sources,
+    )
+    monkeypatch.setattr(
         service.ContextChatEngine,
         "from_defaults",
         lambda **kwargs: FakeEngine(),
@@ -158,6 +182,11 @@ def test_generate_chat_reply_returns_fallback_for_empty_model_response(
     monkeypatch.setattr(service, "db_user_has_indexed_chunks", lambda db, user_id: True)
     monkeypatch.setattr(service, "_configure_llama_index", lambda: None)
     monkeypatch.setattr(service, "create_user_retriever", lambda user_id: object())
+    monkeypatch.setattr(
+        service,
+        "db_filter_valid_source_refs",
+        lambda db, user_id, sources: sources,
+    )
     monkeypatch.setattr(
         service.ContextChatEngine,
         "from_defaults",

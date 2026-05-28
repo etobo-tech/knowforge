@@ -10,7 +10,10 @@ from llama_index.llms.openai import OpenAI
 from sqlalchemy.orm import Session
 
 from db.models import Chat, Message, MessageRole
-from db.repositories.documents import db_user_has_indexed_chunks
+from db.repositories.documents import (
+    db_filter_valid_source_refs,
+    db_user_has_indexed_chunks,
+)
 from rag.config import Config
 from rag.query.retriever import create_user_retriever
 from rag.query.types import ChatReply, SourceRef
@@ -78,16 +81,29 @@ def _sources_from_nodes(nodes: list[NodeWithScore]) -> list[SourceRef]:
         if chunk_id in seen_chunk_ids:
             continue
         seen_chunk_ids.add(chunk_id)
+        try:
+            parsed_document_id = UUID(document_id)
+            parsed_chunk_id = UUID(chunk_id)
+        except ValueError:
+            continue
         quoted = node_with_score.node.get_content()
         sources.append(
             SourceRef(
-                document_id=UUID(document_id),
-                chunk_id=UUID(chunk_id),
+                document_id=parsed_document_id,
+                chunk_id=parsed_chunk_id,
                 score=node_with_score.score,
                 quoted_text=quoted[:2000] if quoted else None,
             )
         )
     return sources
+
+
+def _reply_sources(
+    db: Session,
+    user_id: UUID,
+    nodes: list[NodeWithScore],
+) -> list[SourceRef]:
+    return db_filter_valid_source_refs(db, user_id, _sources_from_nodes(nodes))
 
 
 def generate_chat_reply(
@@ -123,10 +139,10 @@ def generate_chat_reply(
     if not content or content == "Empty Response":
         return ChatReply(
             content=NO_RETRIEVAL_CONTEXT_REPLY,
-            sources=_sources_from_nodes(source_nodes),
+            sources=_reply_sources(db, user_id, source_nodes),
         )
 
     return ChatReply(
         content=content,
-        sources=_sources_from_nodes(source_nodes),
+        sources=_reply_sources(db, user_id, source_nodes),
     )
