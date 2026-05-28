@@ -18,7 +18,7 @@ from db.repositories.chats import (
     db_list_chats_for_user,
     db_update_chat_title,
 )
-from db.services.chat_messages import process_incoming_message
+from db.services.chat_messages import process_incoming_message, process_message_deletion
 from db.session import get_db
 
 DEV_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -87,3 +87,12 @@ def append_message(
 
     chat = process_incoming_message(db, DEV_USER_ID, chat_id, user_message)
     return _chat_detail(chat)
+
+
+@router.delete(
+    "/{chat_id}/messages/{message_id}", status_code=status.HTTP_204_NO_CONTENT
+)
+def delete_message(
+    chat_id: UUID, message_id: UUID, db: Session = Depends(get_db)
+) -> None:
+    process_message_deletion(db, DEV_USER_ID, chat_id, message_id)
