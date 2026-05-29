@@ -16,6 +16,8 @@ from tests.helpers.constants import DEV_USER_ID
 def seed_chat_with_turns(
     db_session: Session,
     turns: list[tuple[str, str]],
+    *,
+    assistant_same_timestamp_as_user: bool = False,
 ):
     chat = db_create_chat(db_session, DEV_USER_ID, title="Delete test")
     messages: list[Message] = []
@@ -35,7 +37,10 @@ def seed_chat_with_turns(
             assistant_content,
             [],
         )
-        assistant_message.created_at = base_time + timedelta(seconds=index * 10 + 1)
+        if assistant_same_timestamp_as_user:
+            assistant_message.created_at = user_message.created_at
+        else:
+            assistant_message.created_at = base_time + timedelta(seconds=index * 10 + 1)
         messages.extend([user_message, assistant_message])
 
     db_session.commit()
