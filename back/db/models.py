@@ -80,7 +80,9 @@ class Document(Base):
     chunks: Mapped[list["DocumentChunk"]] = relationship(
         back_populates="document", cascade="all, delete-orphan"
     )
-    sources: Mapped[list["MessageSource"]] = relationship(back_populates="document")
+    sources: Mapped[list["MessageSource"]] = relationship(
+        back_populates="document", passive_deletes=True
+    )
 
 
 class DocumentChunk(Base):
@@ -109,7 +111,9 @@ class DocumentChunk(Base):
     )
 
     document: Mapped["Document"] = relationship(back_populates="chunks")
-    sources: Mapped[list["MessageSource"]] = relationship(back_populates="chunk")
+    sources: Mapped[list["MessageSource"]] = relationship(
+        back_populates="chunk", passive_deletes=True
+    )
 
 
 class Chat(Base):
