@@ -71,7 +71,9 @@ def fake_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
 def fake_chat_reply(monkeypatch: pytest.MonkeyPatch) -> None:
     from rag.query.types import ChatReply
 
-    def _fake_generate_chat_reply(db, user_id, chat, user_message: str) -> ChatReply:
+    def _fake_generate_chat_reply(
+        db, user_id, user_message: str, prior_messages
+    ) -> ChatReply:
         return ChatReply(
             content=f"Test reply to: {user_message}",
             sources=[],

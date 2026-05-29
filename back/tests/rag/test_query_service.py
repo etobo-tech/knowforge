@@ -21,8 +21,8 @@ def test_generate_chat_reply_without_indexed_documents(db_session: Session) -> N
     reply = generate_chat_reply(
         db_session,
         DEV_USER_ID,
-        chat,
         "What is the refund policy?",
+        [],
     )
 
     assert reply.content == NO_INDEXED_DOCUMENTS_REPLY
@@ -123,7 +123,7 @@ def test_generate_chat_reply_returns_fallback_without_retrieved_context(
         lambda **kwargs: FakeEngine(),
     )
 
-    reply = generate_chat_reply(db_session, DEV_USER_ID, chat, "Where is context?")
+    reply = generate_chat_reply(db_session, DEV_USER_ID, "Where is context?", [])
 
     assert reply.content == NO_RETRIEVAL_CONTEXT_REPLY
     assert reply.sources == []
@@ -158,7 +158,7 @@ def test_generate_chat_reply_returns_content_and_sources(
         lambda **kwargs: FakeEngine(),
     )
 
-    reply = generate_chat_reply(db_session, DEV_USER_ID, chat, "Refund?")
+    reply = generate_chat_reply(db_session, DEV_USER_ID, "Refund?", [])
 
     assert reply.content == "Use the refund policy."
     assert len(reply.sources) == 1
@@ -193,7 +193,7 @@ def test_generate_chat_reply_returns_fallback_for_empty_model_response(
         lambda **kwargs: FakeEngine(),
     )
 
-    reply = generate_chat_reply(db_session, DEV_USER_ID, chat, "Refund?")
+    reply = generate_chat_reply(db_session, DEV_USER_ID, "Refund?", [])
 
     assert reply.content == NO_RETRIEVAL_CONTEXT_REPLY
     assert len(reply.sources) == 1

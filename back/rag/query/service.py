@@ -9,7 +9,7 @@ from llama_index.embeddings.openai import OpenAIEmbedding
 from llama_index.llms.openai import OpenAI
 from sqlalchemy.orm import Session
 
-from db.models import Chat, Message, MessageRole
+from db.models import Message, MessageRole
 from db.repositories.documents import (
     db_filter_valid_source_refs,
     db_user_has_indexed_chunks,
@@ -109,21 +109,19 @@ def _reply_sources(
 def generate_chat_reply(
     db: Session,
     user_id: UUID,
-    chat: Chat,
     user_message: str,
+    prior_messages: list[Message],
 ) -> ChatReply:
     if not db_user_has_indexed_chunks(db, user_id):
         return ChatReply(content=NO_INDEXED_DOCUMENTS_REPLY, sources=[])
 
     _configure_llama_index()
 
-    prior = sorted(chat.messages, key=lambda message: message.created_at)
-
     retriever = create_user_retriever(user_id)
 
     chat_engine = ContextChatEngine.from_defaults(
         retriever=retriever,
-        memory=_build_memory(prior),
+        memory=_build_memory(prior_messages),
         system_prompt=SYSTEM_PROMPT,
     )
 

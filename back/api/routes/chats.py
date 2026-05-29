@@ -10,6 +10,7 @@ from api.schemas.chats import (
     ChatUpdateRequest,
     MessageCreateRequest,
     MessageResponse,
+    MessageUpdateRequest,
 )
 from db.models import Chat
 from db.repositories.chats import (
@@ -18,7 +19,11 @@ from db.repositories.chats import (
     db_list_chats_for_user,
     db_update_chat_title,
 )
-from db.services.chat_messages import process_incoming_message, process_message_deletion
+from db.services.chat_messages import (
+    process_incoming_message,
+    process_message_deletion,
+    process_message_update,
+)
 from db.session import get_db
 
 DEV_USER_ID = UUID("00000000-0000-0000-0000-000000000001")
@@ -96,3 +101,15 @@ def delete_message(
     chat_id: UUID, message_id: UUID, db: Session = Depends(get_db)
 ) -> None:
     process_message_deletion(db, DEV_USER_ID, chat_id, message_id)
+
+
+@router.patch("/{chat_id}/messages/{message_id}", response_model=ChatDetailResponse)
+def update_message(
+    chat_id: UUID,
+    message_id: UUID,
+    body: MessageUpdateRequest,
+    db: Session = Depends(get_db),
+) -> ChatDetailResponse:
+    chat = process_message_update(db, DEV_USER_ID, chat_id, message_id, body)
+
+    return _chat_detail(chat)

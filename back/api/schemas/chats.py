@@ -1,6 +1,5 @@
 from datetime import datetime
 from uuid import UUID
-
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
@@ -21,6 +20,10 @@ class ChatUpdateRequest(BaseModel):
 
 
 class MessageCreateRequest(BaseModel):
+    content: str = Field(min_length=1)
+
+
+class MessageUpdateRequest(BaseModel):
     content: str = Field(min_length=1)
 
 

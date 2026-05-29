@@ -84,6 +84,13 @@ def test_unknown_chat_returns_404(client: TestClient) -> None:
     assert (
         client.delete(f"/api/chats/{unknown_id}/messages/{uuid4()}").status_code == 404
     )
+    assert (
+        client.patch(
+            f"/api/chats/{unknown_id}/messages/{uuid4()}",
+            json={"content": "hi"},
+        ).status_code
+        == 404
+    )
 
 
 def test_delete_message_truncates_subsequent_messages(
@@ -131,5 +138,83 @@ def test_delete_message_returns_404_for_unknown_message(client: TestClient) -> N
     chat_id = client.post("/api/chats", json={"title": "Delete test"}).json()["id"]
 
     response = client.delete(f"/api/chats/{chat_id}/messages/{uuid4()}")
+
+    assert response.status_code == 404
+
+
+def test_update_message_truncates_and_regenerates_assistant(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    chat, messages = seed_chat_with_turns(
+        db_session,
+        [
+            ("First question", "First answer"),
+            ("Second question", "Second answer"),
+        ],
+    )
+    second_user_message_id = messages[2].id
+
+    updated = client.patch(
+        f"/api/chats/{chat.id}/messages/{second_user_message_id}",
+        json={"content": "Revised second question"},
+    )
+    assert updated.status_code == 200
+
+    result_messages = updated.json()["messages"]
+    assert len(result_messages) == 4
+    assert result_messages[2]["id"] == str(second_user_message_id)
+    assert result_messages[2]["content"] == "Revised second question"
+    assert result_messages[3]["role"] == "assistant"
+    assert result_messages[3]["content"] == "Test reply to: Revised second question"
+
+
+def test_update_message_rejects_empty_content(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    chat, messages = seed_chat_with_turns(
+        db_session,
+        [("Question", "Answer")],
+    )
+
+    response = client.patch(
+        f"/api/chats/{chat.id}/messages/{messages[0].id}",
+        json={"content": "   "},
+    )
+
+    assert response.status_code == 400
+
+
+def test_update_message_rejects_assistant_message(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    chat, messages = seed_chat_with_turns(
+        db_session,
+        [("Question", "Answer")],
+    )
+
+    response = client.patch(
+        f"/api/chats/{chat.id}/messages/{messages[1].id}",
+        json={"content": "Nope"},
+    )
+
+    assert response.status_code == 400
+
+
+def test_update_message_returns_404_for_unknown_message(
+    client: TestClient,
+    db_session: Session,
+) -> None:
+    chat, _ = seed_chat_with_turns(
+        db_session,
+        [("Question", "Answer")],
+    )
+
+    response = client.patch(
+        f"/api/chats/{chat.id}/messages/{uuid4()}",
+        json={"content": "Missing"},
+    )
 
     assert response.status_code == 404
