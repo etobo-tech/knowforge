@@ -221,6 +221,26 @@ function messagesKeptAfterDeletion(
   )
 }
 
+/** Matches backend truncation: prior turns + edited user message only. */
+export function truncateMessagesForEdit(
+  messages: MessageResponse[],
+  messageId: string,
+  newContent: string,
+): MessageResponse[] {
+  const target = messages.find((message) => message.id === messageId)
+  if (!target) return messages
+
+  const cutoff = new Date(target.created_at).getTime()
+  return messages
+    .filter((message) => {
+      const messageTime = new Date(message.created_at).getTime()
+      return messageTime < cutoff || message.id === messageId
+    })
+    .map((message) =>
+      message.id === messageId ? { ...message, content: newContent } : message,
+    )
+}
+
 export async function deleteChatMessage(
   chatId: string,
   messageId: string,
@@ -245,4 +265,28 @@ export async function deleteChatMessage(
   }
   const detail = await parseJsonError(response)
   throw new Error(detail ?? `Failed to delete message (${response.status})`)
+}
+
+export async function updateChatMessage(
+  chatId: string,
+  messageId: string,
+  content: string,
+): Promise<ChatDetailResponse> {
+  const response = await fetch(
+    `${API_BASE}/api/chats/${encodeURIComponent(chatId)}/messages/${encodeURIComponent(messageId)}`,
+    {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+      cache: 'no-store',
+    },
+  )
+  if (!response.ok) {
+    const detail = await parseJsonError(response)
+    throw new Error(detail ?? `Failed to update message (${response.status})`)
+  }
+  const chat = (await response.json()) as ChatDetailResponse
+  setCachedChat(chat)
+  invalidateChatListCache()
+  return chat
 }

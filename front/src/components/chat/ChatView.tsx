@@ -1,7 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useRef, useState } from 'react'
-import { ArrowRight, Loader2, Trash2 } from 'lucide-react'
+import { ArrowRight, Check, Loader2, Pencil, Trash2, X } from 'lucide-react'
 
 import {
   appendChatMessage,
@@ -11,9 +11,12 @@ import {
   getCachedChat,
   getChat,
   notifyChatsUpdated,
+  truncateMessagesForEdit,
+  updateChatMessage,
   type ChatDetailResponse,
   type MessageResponse,
 } from '@/lib/api'
+import { setCachedChat } from '@/lib/chatCache'
 
 const suggestions = [
   'Summarize our refund policy',
@@ -48,15 +51,32 @@ function TypingBubble() {
 
 function MessageBubble({
   msg,
+  isEditing,
+  editDraft,
+  actionsDisabled,
+  onEditStart,
+  onEditDraftChange,
+  onEditSave,
+  onEditCancel,
   onDelete,
   isDeleting,
+  isSavingEdit,
 }: {
   msg: MessageResponse
+  isEditing?: boolean
+  editDraft?: string
+  actionsDisabled?: boolean
+  onEditStart?: (messageId: string, content: string) => void
+  onEditDraftChange?: (value: string) => void
+  onEditSave?: () => void
+  onEditCancel?: () => void
   onDelete?: (messageId: string) => void
   isDeleting?: boolean
+  isSavingEdit?: boolean
 }) {
   const isUser = msg.role === 'user'
-  const canDelete = isUser && !msg.id.startsWith('pending-') && onDelete
+  const canAct =
+    isUser && !msg.id.startsWith('pending-') && !actionsDisabled && onDelete && onEditStart
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -68,7 +88,7 @@ function MessageBubble({
         <div
           className={
             isUser
-              ? 'rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
+              ? 'w-full rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
               : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
           }
         >
@@ -77,22 +97,84 @@ function MessageBubble({
               Knowforge
             </p>
           ) : null}
-          <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+          {isEditing ? (
+            <textarea
+              value={editDraft}
+              onChange={(e) => onEditDraftChange?.(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Escape') {
+                  e.preventDefault()
+                  onEditCancel?.()
+                }
+              }}
+              disabled={isSavingEdit}
+              autoFocus
+              rows={Math.min(8, Math.max(2, (editDraft ?? '').split('\n').length))}
+              className="w-full min-h-[2.5rem] resize-y bg-white/10 text-white placeholder:text-white/60 outline-none disabled:opacity-50"
+              aria-label="Edit message"
+            />
+          ) : (
+            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+          )}
         </div>
-        {canDelete ? (
-          <button
-            type="button"
-            onClick={() => onDelete(msg.id)}
-            disabled={isDeleting}
-            className="mt-1 flex items-center justify-center p-1 text-text-secondary opacity-0 transition-opacity group-hover:opacity-100 hover:text-primary disabled:opacity-50"
-            aria-label="Delete message"
+        {canAct || isEditing ? (
+          <div
+            className={`mt-1 flex items-center gap-1 ${
+              isEditing ? 'opacity-100' : 'opacity-0 transition-opacity group-hover:opacity-100'
+            }`}
           >
-            {isDeleting ? (
-              <Loader2 size={14} className="animate-spin" />
+            {isEditing ? (
+              <>
+                <button
+                  type="button"
+                  onClick={() => onEditSave?.()}
+                  disabled={isSavingEdit || !editDraft?.trim()}
+                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  aria-label="Save message"
+                >
+                  {isSavingEdit ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Check size={14} />
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onEditCancel?.()}
+                  disabled={isSavingEdit}
+                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  aria-label="Cancel edit"
+                >
+                  <X size={14} />
+                </button>
+              </>
             ) : (
-              <Trash2 size={14} />
+              <>
+                <button
+                  type="button"
+                  onClick={() => onEditStart?.(msg.id, msg.content)}
+                  disabled={isDeleting}
+                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  aria-label="Edit message"
+                >
+                  <Pencil size={14} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => onDelete?.(msg.id)}
+                  disabled={isDeleting}
+                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  aria-label="Delete message"
+                >
+                  {isDeleting ? (
+                    <Loader2 size={14} className="animate-spin" />
+                  ) : (
+                    <Trash2 size={14} />
+                  )}
+                </button>
+              </>
             )}
-          </button>
+          </div>
         ) : null}
       </div>
     </div>
@@ -108,10 +190,15 @@ export function ChatView({ initialChatId }: Props) {
   const [isAwaitingReply, setIsAwaitingReply] = useState(false)
   const [isLoading, setIsLoading] = useState(Boolean(initialChatId))
   const [deletingMessageId, setDeletingMessageId] = useState<string | null>(null)
+  const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
+  const [editDraft, setEditDraft] = useState('')
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const hasConversation = messages.length > 0 || isAwaitingReply
+  const messageActionsBusy =
+    isSending || isAwaitingReply || isSavingEdit || Boolean(deletingMessageId)
 
   const applyChat = useCallback((chat: ChatDetailResponse) => {
     setChatId(chat.id)
@@ -161,7 +248,7 @@ export function ChatView({ initialChatId }: Props) {
 
   const handleSend = useCallback(async () => {
     const content = message.trim()
-    if (!content || isSending) return
+    if (!content || isSending || editingMessageId) return
 
     const optimisticId = `pending-${crypto.randomUUID()}`
     const optimisticUser: MessageResponse = {
@@ -198,11 +285,11 @@ export function ChatView({ initialChatId }: Props) {
       setIsSending(false)
       setIsAwaitingReply(false)
     }
-  }, [message, isSending, chatId, applyChat])
+  }, [message, isSending, chatId, editingMessageId, applyChat])
 
   const handleDeleteMessage = useCallback(
     async (messageId: string) => {
-      if (!chatId || deletingMessageId || isSending || isAwaitingReply) return
+      if (!chatId || deletingMessageId || messageActionsBusy || editingMessageId) return
 
       setDeletingMessageId(messageId)
       setError(null)
@@ -220,15 +307,69 @@ export function ChatView({ initialChatId }: Props) {
         setDeletingMessageId(null)
       }
     },
-    [chatId, deletingMessageId, isSending, isAwaitingReply, applyChat],
+    [chatId, deletingMessageId, messageActionsBusy, editingMessageId, applyChat],
   )
+
+  const handleStartEdit = useCallback(
+    (messageId: string, content: string) => {
+      if (messageActionsBusy || editingMessageId) return
+      setEditingMessageId(messageId)
+      setEditDraft(content)
+      setError(null)
+    },
+    [messageActionsBusy, editingMessageId],
+  )
+
+  const handleCancelEdit = useCallback(() => {
+    if (isSavingEdit) return
+    setEditingMessageId(null)
+    setEditDraft('')
+  }, [isSavingEdit])
+
+  const handleSaveEdit = useCallback(async () => {
+    const content = editDraft.trim()
+    if (!chatId || !editingMessageId || !content || isSavingEdit) return
+
+    const messageId = editingMessageId
+    const previousMessages = messages
+
+    setIsSavingEdit(true)
+    setIsAwaitingReply(true)
+    setError(null)
+    setEditingMessageId(null)
+    setEditDraft('')
+
+    const truncated = truncateMessagesForEdit(previousMessages, messageId, content)
+    setMessages(truncated)
+    const cached = getCachedChat(chatId)
+    if (cached) {
+      setCachedChat({ ...cached, messages: truncated })
+    }
+
+    try {
+      const updated = await updateChatMessage(chatId, messageId, content)
+      applyChat(updated)
+      notifyChatsUpdated()
+    } catch {
+      setMessages(previousMessages)
+      if (cached) {
+        setCachedChat({ ...cached, messages: previousMessages })
+      }
+      setEditingMessageId(messageId)
+      setEditDraft(content)
+      setError('Could not save the message. Try again.')
+    } finally {
+      setIsSavingEdit(false)
+      setIsAwaitingReply(false)
+    }
+  }, [chatId, editingMessageId, editDraft, isSavingEdit, messages, applyChat])
 
   const composer = (
     <div className="flex items-center gap-3 px-5 py-3 bg-content-bg border border-card-border rounded-full">
       <input
         type="text"
         value={message}
-        disabled={isSending || isLoading}
+        disabled={isSending || isLoading || isSavingEdit || Boolean(editingMessageId)}
         onChange={(e) => setMessage(e.target.value)}
         onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
@@ -241,7 +382,9 @@ export function ChatView({ initialChatId }: Props) {
       />
       <button
         type="button"
-        disabled={isSending || isLoading || !message.trim()}
+        disabled={
+          isSending || isLoading || isSavingEdit || Boolean(editingMessageId) || !message.trim()
+        }
         onClick={() => void handleSend()}
         className="w-9 h-9 flex items-center justify-center bg-primary hover:bg-primary-hover text-white rounded-full transition-colors shrink-0 disabled:opacity-50"
         aria-label="Send message"
@@ -305,8 +448,16 @@ export function ChatView({ initialChatId }: Props) {
                 <MessageBubble
                   key={msg.id}
                   msg={msg}
+                  isEditing={editingMessageId === msg.id}
+                  editDraft={editingMessageId === msg.id ? editDraft : undefined}
+                  actionsDisabled={messageActionsBusy || Boolean(editingMessageId)}
+                  onEditStart={handleStartEdit}
+                  onEditDraftChange={setEditDraft}
+                  onEditSave={() => void handleSaveEdit()}
+                  onEditCancel={handleCancelEdit}
                   onDelete={handleDeleteMessage}
                   isDeleting={deletingMessageId === msg.id}
+                  isSavingEdit={isSavingEdit && editingMessageId === msg.id}
                 />
               ))}
               {isAwaitingReply ? <TypingBubble /> : null}
