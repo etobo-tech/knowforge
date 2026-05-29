@@ -17,6 +17,7 @@ import {
   type MessageResponse,
 } from '@/lib/api'
 import { setCachedChat } from '@/lib/chatCache'
+import { ConfirmModal } from '@/components/ui/Modal'
 
 const suggestions = [
   'Summarize our refund policy',
@@ -28,6 +29,10 @@ const suggestions = [
 type Props = {
   initialChatId?: string
 }
+
+type PendingConfirm =
+  | { type: 'delete'; messageId: string }
+  | { type: 'edit'; messageId: string; content: string }
 
 function TypingBubble() {
   return (
@@ -77,6 +82,8 @@ function MessageBubble({
   const isUser = msg.role === 'user'
   const canAct =
     isUser && !msg.id.startsWith('pending-') && !actionsDisabled && onDelete && onEditStart
+  const hasEditChanges =
+    isEditing && editDraft !== undefined && editDraft.trim() !== msg.content.trim()
 
   return (
     <div className={`flex ${isUser ? 'justify-end' : 'justify-start'}`}>
@@ -128,7 +135,7 @@ function MessageBubble({
                 <button
                   type="button"
                   onClick={() => onEditSave?.()}
-                  disabled={isSavingEdit || !editDraft?.trim()}
+                  disabled={isSavingEdit || !editDraft?.trim() || !hasEditChanges}
                   className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
                   aria-label="Save message"
                 >
@@ -193,12 +200,19 @@ export function ChatView({ initialChatId }: Props) {
   const [editingMessageId, setEditingMessageId] = useState<string | null>(null)
   const [editDraft, setEditDraft] = useState('')
   const [isSavingEdit, setIsSavingEdit] = useState(false)
+  const [pendingConfirm, setPendingConfirm] = useState<PendingConfirm | null>(null)
+  const [confirmLoading, setConfirmLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
 
   const hasConversation = messages.length > 0 || isAwaitingReply
   const messageActionsBusy =
-    isSending || isAwaitingReply || isSavingEdit || Boolean(deletingMessageId)
+    isSending ||
+    isAwaitingReply ||
+    isSavingEdit ||
+    confirmLoading ||
+    Boolean(deletingMessageId) ||
+    Boolean(pendingConfirm)
 
   const applyChat = useCallback((chat: ChatDetailResponse) => {
     setChatId(chat.id)
@@ -287,9 +301,9 @@ export function ChatView({ initialChatId }: Props) {
     }
   }, [message, isSending, chatId, editingMessageId, applyChat])
 
-  const handleDeleteMessage = useCallback(
+  const executeDeleteMessage = useCallback(
     async (messageId: string) => {
-      if (!chatId || deletingMessageId || messageActionsBusy || editingMessageId) return
+      if (!chatId) return
 
       setDeletingMessageId(messageId)
       setError(null)
@@ -301,14 +315,100 @@ export function ChatView({ initialChatId }: Props) {
           applyChat(updated)
         }
         notifyChatsUpdated()
+        setPendingConfirm(null)
       } catch {
         setError('Could not delete the message. Try again.')
       } finally {
         setDeletingMessageId(null)
       }
     },
-    [chatId, deletingMessageId, messageActionsBusy, editingMessageId, applyChat],
+    [chatId, applyChat],
   )
+
+  const handleDeleteRequest = useCallback(
+    (messageId: string) => {
+      if (!chatId || messageActionsBusy || editingMessageId) return
+      setPendingConfirm({ type: 'delete', messageId })
+      setError(null)
+    },
+    [chatId, messageActionsBusy, editingMessageId],
+  )
+
+  const executeSaveEdit = useCallback(
+    async (messageId: string, content: string) => {
+      if (!chatId) return
+
+      const previousMessages = messages
+
+      setIsSavingEdit(true)
+      setIsAwaitingReply(true)
+      setError(null)
+
+      const truncated = truncateMessagesForEdit(previousMessages, messageId, content)
+      setMessages(truncated)
+      const cached = getCachedChat(chatId)
+      if (cached) {
+        setCachedChat({ ...cached, messages: truncated })
+      }
+
+      try {
+        const updated = await updateChatMessage(chatId, messageId, content)
+        applyChat(updated)
+        setEditingMessageId(null)
+        setEditDraft('')
+        setPendingConfirm(null)
+        notifyChatsUpdated()
+      } catch {
+        setMessages(previousMessages)
+        if (cached) {
+          setCachedChat({ ...cached, messages: previousMessages })
+        }
+        setError('Could not save the message. Try again.')
+      } finally {
+        setIsSavingEdit(false)
+        setIsAwaitingReply(false)
+      }
+    },
+    [chatId, messages, applyChat],
+  )
+
+  const handleSaveEditRequest = useCallback(() => {
+    const content = editDraft.trim()
+    const originalContent = messages.find((msg) => msg.id === editingMessageId)?.content
+    if (
+      !chatId ||
+      !editingMessageId ||
+      !content ||
+      !originalContent ||
+      content === originalContent.trim() ||
+      isSavingEdit ||
+      confirmLoading
+    ) {
+      return
+    }
+    setPendingConfirm({ type: 'edit', messageId: editingMessageId, content })
+    setError(null)
+  }, [chatId, editingMessageId, editDraft, messages, isSavingEdit, confirmLoading])
+
+  const handleConfirmAction = useCallback(async () => {
+    if (!pendingConfirm || confirmLoading) return
+
+    setConfirmLoading(true)
+    try {
+      if (pendingConfirm.type === 'delete') {
+        await executeDeleteMessage(pendingConfirm.messageId)
+      } else {
+        await executeSaveEdit(pendingConfirm.messageId, pendingConfirm.content)
+      }
+    } finally {
+      setConfirmLoading(false)
+    }
+  }, [pendingConfirm, confirmLoading, executeDeleteMessage, executeSaveEdit])
+
+  const handleCloseConfirm = useCallback(() => {
+    if (confirmLoading) return
+    setPendingConfirm(null)
+  }, [confirmLoading])
 
   const handleStartEdit = useCallback(
     (messageId: string, content: string) => {
@@ -326,43 +426,18 @@ export function ChatView({ initialChatId }: Props) {
     setEditDraft('')
   }, [isSavingEdit])
 
-  const handleSaveEdit = useCallback(async () => {
-    const content = editDraft.trim()
-    if (!chatId || !editingMessageId || !content || isSavingEdit) return
+  const confirmModalTitle =
+    pendingConfirm?.type === 'delete' ? 'Delete message?' : 'Edit message?'
 
-    const messageId = editingMessageId
-    const previousMessages = messages
-
-    setIsSavingEdit(true)
-    setIsAwaitingReply(true)
-    setError(null)
-    setEditingMessageId(null)
-    setEditDraft('')
-
-    const truncated = truncateMessagesForEdit(previousMessages, messageId, content)
-    setMessages(truncated)
-    const cached = getCachedChat(chatId)
-    if (cached) {
-      setCachedChat({ ...cached, messages: truncated })
-    }
-
-    try {
-      const updated = await updateChatMessage(chatId, messageId, content)
-      applyChat(updated)
-      notifyChatsUpdated()
-    } catch {
-      setMessages(previousMessages)
-      if (cached) {
-        setCachedChat({ ...cached, messages: previousMessages })
-      }
-      setEditingMessageId(messageId)
-      setEditDraft(content)
-      setError('Could not save the message. Try again.')
-    } finally {
-      setIsSavingEdit(false)
-      setIsAwaitingReply(false)
-    }
-  }, [chatId, editingMessageId, editDraft, isSavingEdit, messages, applyChat])
+  const confirmModalDescription =
+    pendingConfirm?.type === 'delete' ? (
+      <p>
+        This will remove this message and every reply after it. This action cannot be
+        undone.
+      </p>
+    ) : pendingConfirm?.type === 'edit' ? (
+      <p>Are you sure you want to edit this message?</p>
+    ) : null
 
   const composer = (
     <div className="flex items-center gap-3 px-5 py-3 bg-content-bg border border-card-border rounded-full">
@@ -396,6 +471,17 @@ export function ChatView({ initialChatId }: Props) {
 
   return (
     <div className="h-full flex flex-col">
+      <ConfirmModal
+        open={pendingConfirm !== null}
+        onClose={handleCloseConfirm}
+        onConfirm={handleConfirmAction}
+        title={confirmModalTitle}
+        description={confirmModalDescription}
+        confirmLabel={pendingConfirm?.type === 'delete' ? 'Delete' : 'Save'}
+        confirmVariant={pendingConfirm?.type === 'delete' ? 'danger' : 'primary'}
+        isLoading={confirmLoading}
+      />
+
       <header className="px-8 py-5 border-b border-card-border bg-white shrink-0">
         <h1 className="text-2xl font-bold text-text-primary truncate">{title}</h1>
         <p className="text-sm text-text-secondary mt-0.5">
@@ -453,11 +539,21 @@ export function ChatView({ initialChatId }: Props) {
                   actionsDisabled={messageActionsBusy || Boolean(editingMessageId)}
                   onEditStart={handleStartEdit}
                   onEditDraftChange={setEditDraft}
-                  onEditSave={() => void handleSaveEdit()}
+                  onEditSave={handleSaveEditRequest}
                   onEditCancel={handleCancelEdit}
-                  onDelete={handleDeleteMessage}
-                  isDeleting={deletingMessageId === msg.id}
-                  isSavingEdit={isSavingEdit && editingMessageId === msg.id}
+                  onDelete={handleDeleteRequest}
+                  isDeleting={
+                    deletingMessageId === msg.id ||
+                    (confirmLoading &&
+                      pendingConfirm?.type === 'delete' &&
+                      pendingConfirm.messageId === msg.id)
+                  }
+                  isSavingEdit={
+                    (isSavingEdit && editingMessageId === msg.id) ||
+                    (confirmLoading &&
+                      pendingConfirm?.type === 'edit' &&
+                      pendingConfirm.messageId === msg.id)
+                  }
                 />
               ))}
               {isAwaitingReply ? <TypingBubble /> : null}
