@@ -95,7 +95,9 @@ function MessageBubble({
         <div
           className={
             isUser
-              ? 'w-full rounded-2xl rounded-br-md bg-primary px-4 py-3 text-sm leading-relaxed text-white shadow-sm'
+              ? `w-full rounded-2xl rounded-br-md bg-primary text-sm leading-relaxed text-white shadow-sm ${
+                  isEditing ? 'ring-2 ring-white/30 px-3 py-2.5' : 'px-4 py-3'
+                }`
               : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
           }
         >
@@ -105,38 +107,28 @@ function MessageBubble({
             </p>
           ) : null}
           {isEditing ? (
-            <textarea
-              value={editDraft}
-              onChange={(e) => onEditDraftChange?.(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Escape') {
-                  e.preventDefault()
-                  onEditCancel?.()
-                }
-              }}
-              disabled={isSavingEdit}
-              autoFocus
-              rows={Math.min(8, Math.max(2, (editDraft ?? '').split('\n').length))}
-              className="w-full min-h-[2.5rem] resize-y bg-white/10 text-white placeholder:text-white/60 outline-none disabled:opacity-50"
-              aria-label="Edit message"
-            />
-          ) : (
-            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
-          )}
-        </div>
-        {canAct || isEditing ? (
-          <div
-            className={`mt-1 flex items-center gap-1 ${
-              isEditing ? 'opacity-100' : 'opacity-0 transition-opacity group-hover:opacity-100'
-            }`}
-          >
-            {isEditing ? (
-              <>
+            <>
+              <textarea
+                value={editDraft}
+                onChange={(e) => onEditDraftChange?.(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Escape') {
+                    e.preventDefault()
+                    onEditCancel?.()
+                  }
+                }}
+                disabled={isSavingEdit}
+                autoFocus
+                rows={Math.min(8, Math.max(1, (editDraft ?? '').split('\n').length))}
+                className="block w-full resize-none border-0 bg-transparent p-0 text-sm leading-relaxed text-white outline-none selection:bg-white/25 placeholder:text-white/60 disabled:opacity-50"
+                aria-label="Edit message"
+              />
+              <div className="mt-2 flex justify-end gap-0.5 border-t border-white/20 pt-2">
                 <button
                   type="button"
                   onClick={() => onEditSave?.()}
                   disabled={isSavingEdit || !editDraft?.trim() || !hasEditChanges}
-                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  className="rounded-md p-1.5 text-white/75 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-40"
                   aria-label="Save message"
                 >
                   {isSavingEdit ? (
@@ -149,38 +141,41 @@ function MessageBubble({
                   type="button"
                   onClick={() => onEditCancel?.()}
                   disabled={isSavingEdit}
-                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+                  className="rounded-md p-1.5 text-white/75 transition-colors hover:bg-white/15 hover:text-white disabled:opacity-40"
                   aria-label="Cancel edit"
                 >
                   <X size={14} />
                 </button>
-              </>
-            ) : (
-              <>
-                <button
-                  type="button"
-                  onClick={() => onEditStart?.(msg.id, msg.content)}
-                  disabled={isDeleting}
-                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
-                  aria-label="Edit message"
-                >
-                  <Pencil size={14} />
-                </button>
-                <button
-                  type="button"
-                  onClick={() => onDelete?.(msg.id)}
-                  disabled={isDeleting}
-                  className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
-                  aria-label="Delete message"
-                >
-                  {isDeleting ? (
-                    <Loader2 size={14} className="animate-spin" />
-                  ) : (
-                    <Trash2 size={14} />
-                  )}
-                </button>
-              </>
-            )}
+              </div>
+            </>
+          ) : (
+            <p className="whitespace-pre-wrap break-words">{msg.content}</p>
+          )}
+        </div>
+        {canAct && !isEditing ? (
+          <div className="mt-1 flex items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+            <button
+              type="button"
+              onClick={() => onEditStart?.(msg.id, msg.content)}
+              disabled={isDeleting}
+              className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+              aria-label="Edit message"
+            >
+              <Pencil size={14} />
+            </button>
+            <button
+              type="button"
+              onClick={() => onDelete?.(msg.id)}
+              disabled={isDeleting}
+              className="flex items-center justify-center p-1 text-text-secondary hover:text-primary disabled:opacity-50"
+              aria-label="Delete message"
+            >
+              {isDeleting ? (
+                <Loader2 size={14} className="animate-spin" />
+              ) : (
+                <Trash2 size={14} />
+              )}
+            </button>
           </div>
         ) : null}
       </div>
