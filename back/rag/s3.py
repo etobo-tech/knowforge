@@ -38,6 +38,25 @@ def _safe_attachment_filename(name: str) -> str:
     return base.replace('"', "'")[:200]
 
 
+def presigned_inline_url(
+    s3_key: str,
+    *,
+    expires_in: int = 3600,
+) -> str:
+    s3 = get_s3_client()
+    return cast(
+        str,
+        s3.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": Config.S3_BUCKET,
+                "Key": s3_key,
+            },
+            ExpiresIn=expires_in,
+        ),
+    )
+
+
 def presigned_download_url(
     s3_key: str,
     download_filename: str,
