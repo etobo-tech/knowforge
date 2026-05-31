@@ -1,27 +1,10 @@
-from types import SimpleNamespace
+from llama_index.core import Settings
 
-from rag.indexing import embed as embed_module
-
-
-class FakeEmbeddingsAPI:
-    def create(self, model: str, input: list[str]) -> SimpleNamespace:
-        return SimpleNamespace(
-            data=[
-                SimpleNamespace(embedding=[float(index)] * 1536)
-                for index, _ in enumerate(input)
-            ]
-        )
+from rag.llama_settings import configure_llama_index
 
 
-class FakeOpenAIClient:
-    def __init__(self, api_key: str) -> None:
-        self.embeddings = FakeEmbeddingsAPI()
+def test_configure_llama_index_sets_embed_and_chat_models() -> None:
+    configure_llama_index()
 
-
-def test_embed_texts_uses_openai_client(monkeypatch) -> None:
-    monkeypatch.setattr(embed_module, "OpenAI", FakeOpenAIClient)
-
-    result = embed_module.embed_texts(["alpha", "beta"])
-
-    assert len(result) == 2
-    assert len(result[0]) == 1536
+    assert Settings.embed_model is not None
+    assert Settings.llm is not None
