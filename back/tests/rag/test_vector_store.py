@@ -13,6 +13,7 @@ from rag.indexing.pipeline import index_document
 from rag.vector_store import (
     delete_document_vectors as real_delete_document_vectors,
     sync_document_vectors as real_sync_document_vectors,
+    sync_image_document_vectors as real_sync_image_document_vectors,
     user_metadata_filters,
 )
 from tests.helpers.constants import DEV_USER_ID
@@ -77,16 +78,21 @@ def test_user_metadata_filters_scopes_retrieval_to_user() -> None:
     assert only_filter.value == str(DEV_USER_ID)
 
 
-def test_delete_document_vectors_uses_document_filter(monkeypatch) -> None:
-    store = FakePgVectorStore()
-    monkeypatch.setattr(vector_store, "get_pg_vector_store", lambda: store)
+def test_delete_document_vectors_uses_document_filter_on_both_stores(
+    monkeypatch,
+) -> None:
+    text_store = FakePgVectorStore()
+    image_store = FakePgVectorStore()
+    monkeypatch.setattr(vector_store, "get_pg_vector_store", lambda: text_store)
+    monkeypatch.setattr(vector_store, "get_pg_image_vector_store", lambda: image_store)
 
     document_id = _indexed_document_id()
     real_delete_document_vectors(document_id)
 
-    deleted_filter = store.deleted_filters[0].filters[0]
+    deleted_filter = text_store.deleted_filters[0].filters[0]
     assert deleted_filter.key == "document_id"
     assert deleted_filter.value == str(document_id)
+    assert len(image_store.deleted_filters) == 1
 
 
 def test_sync_document_vectors_adds_text_nodes(
@@ -95,7 +101,9 @@ def test_sync_document_vectors_adds_text_nodes(
     store = FakePgVectorStore()
     monkeypatch.setattr(vector_store, "get_pg_vector_store", lambda: store)
     monkeypatch.setattr(
-        vector_store, "delete_document_vectors", real_delete_document_vectors
+        vector_store,
+        "delete_text_document_vectors",
+        lambda document_id: store.delete_nodes(filters=object()),
     )
     document, chunks = _document_with_chunks(db_session)
 
@@ -126,7 +134,9 @@ def test_sync_document_vectors_deletes_existing_vectors_for_empty_chunks(
     store = FakePgVectorStore()
     monkeypatch.setattr(vector_store, "get_pg_vector_store", lambda: store)
     monkeypatch.setattr(
-        vector_store, "delete_document_vectors", real_delete_document_vectors
+        vector_store,
+        "delete_text_document_vectors",
+        lambda document_id: store.delete_nodes(filters=object()),
     )
     document = build_document(
         user_id=DEV_USER_ID,
@@ -141,6 +151,77 @@ def test_sync_document_vectors_deletes_existing_vectors_for_empty_chunks(
 
     assert store.added == []
     assert len(store.deleted_filters) == 1
+
+
+def test_sync_image_document_vectors_adds_image_nodes(
+    db_session: Session, monkeypatch
+) -> None:
+    store = FakePgVectorStore()
+    monkeypatch.setattr(vector_store, "get_pg_image_vector_store", lambda: store)
+    monkeypatch.setattr(
+        vector_store,
+        "delete_image_document_vectors",
+        lambda document_id: store.delete_nodes(filters=object()),
+    )
+    document, chunks = _image_document_with_chunks(db_session)
+
+    real_sync_image_document_vectors(document, chunks, [[0.1, 0.2]])
+
+    assert len(store.added) == 1
+    assert store.added[0].metadata["content_kind"] == "image"
+    assert store.added[0].metadata["s3_key"] == document.s3_key
+
+
+def test_sync_image_document_vectors_deletes_when_no_chunks(monkeypatch) -> None:
+    store = FakePgVectorStore()
+    monkeypatch.setattr(vector_store, "get_pg_image_vector_store", lambda: store)
+    monkeypatch.setattr(
+        vector_store,
+        "delete_image_document_vectors",
+        lambda document_id: store.delete_nodes(filters=object()),
+    )
+    document = build_document(
+        user_id=DEV_USER_ID,
+        filename="empty.png",
+        mime_type="image/png",
+        size_bytes=0,
+        content_hash="hash-vector-image-empty",
+    )
+    document.id = uuid4()
+
+    real_sync_image_document_vectors(document, [], [])
+
+    assert store.added == []
+    assert len(store.deleted_filters) == 1
+
+
+def _image_document_with_chunks(
+    db_session: Session,
+) -> tuple[Document, list[DocumentChunk]]:
+    document = build_document(
+        user_id=DEV_USER_ID,
+        filename="chart.png",
+        mime_type="image/png",
+        size_bytes=10,
+        content_hash="hash-vector-image",
+    )
+    db_persist_new_document(db_session, document)
+    db_mark_uploaded(db_session, document)
+    chunks = [
+        DocumentChunk(
+            document_id=document.id,
+            chunk_index=0,
+            content="",
+            metadata_={
+                "content_kind": "image",
+                "s3_key": document.s3_key,
+                "search_description": "Quarterly revenue chart",
+            },
+        )
+    ]
+    db_session.add_all(chunks)
+    db_session.flush()
+    return document, chunks
 
 
 def _indexed_document_id():
