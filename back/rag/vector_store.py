@@ -9,8 +9,6 @@ from llama_index.core.vector_stores.types import (
     MetadataFilters,
 )
 from llama_index.vector_stores.postgres import PGVectorStore
-from sqlalchemy import select
-from sqlalchemy.orm import Session
 
 from db.models import Document, DocumentChunk
 from rag.config import Config
@@ -160,20 +158,3 @@ def sync_image_document_vectors(
         for chunk, embedding in zip(chunks, embeddings, strict=True)
     ]
     store.add(nodes)
-
-
-def sync_indexed_document_vectors(
-    db: Session,
-    document: Document,
-    embeddings: list[list[float]],
-) -> None:
-    chunks = (
-        db.execute(
-            select(DocumentChunk)
-            .where(DocumentChunk.document_id == document.id)
-            .order_by(DocumentChunk.chunk_index)
-        )
-        .scalars()
-        .all()
-    )
-    sync_document_vectors(document, list(chunks), embeddings)

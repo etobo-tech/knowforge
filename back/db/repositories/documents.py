@@ -97,6 +97,18 @@ def db_filter_valid_source_refs(
     ]
 
 
+def db_list_chunks_for_document(db: Session, document_id: UUID) -> list[DocumentChunk]:
+    return list(
+        db.execute(
+            select(DocumentChunk)
+            .where(DocumentChunk.document_id == document_id)
+            .order_by(DocumentChunk.chunk_index)
+        )
+        .scalars()
+        .all()
+    )
+
+
 def db_user_has_indexed_chunks(db: Session, user_id: UUID) -> bool:
     found = db.execute(
         select(Document.id)
