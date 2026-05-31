@@ -3,7 +3,7 @@
 import { useRef, useState, type DragEvent } from 'react'
 import { CloudUpload, Upload } from 'lucide-react'
 
-const ACCEPT = '.pdf,.docx,.txt,.md'
+const ACCEPT = '.pdf,.docx,.txt,.md,.png,.jpg,.jpeg'
 
 type Props = {
   disabled: boolean
@@ -69,7 +69,7 @@ export function UploadDropzone({ disabled, onFilesQueued }: Props) {
           : 'Drop files here or click to add to the queue'}
       </p>
       <p className="text-sm text-text-secondary mb-5">
-        PDF, DOCX, TXT, MD &middot; Max 25 MB per file &middot; Then press Upload
+        PDF, DOCX, TXT, MD, PNG, JPG &middot; Max 25 MB per file &middot; Then press Upload
       </p>
       <button
         type="button"

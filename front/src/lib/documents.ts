@@ -49,6 +49,8 @@ export function mimeToLabel(mimeType: string): string {
       'DOCX',
     'text/plain': 'TXT',
     'text/markdown': 'MD',
+    'image/png': 'PNG',
+    'image/jpeg': 'JPG',
   }
   return map[mimeType] ?? mimeType.split('/').pop()?.toUpperCase() ?? 'FILE'
 }
