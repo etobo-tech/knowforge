@@ -65,6 +65,21 @@ def fake_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
         "rag.indexing.text.embed_texts",
         deterministic_embeddings,
     )
+    monkeypatch.setattr(
+        "rag.indexing.image.embed_texts",
+        deterministic_embeddings,
+    )
+
+
+@pytest.fixture(autouse=True)
+def fake_image_vision(monkeypatch: pytest.MonkeyPatch) -> None:
+    def _fake_description(content: bytes, mime_type: str) -> str:
+        return f"Search description for {mime_type} ({len(content)} bytes)"
+
+    monkeypatch.setattr(
+        "rag.indexing.image.generate_image_search_description",
+        _fake_description,
+    )
 
 
 @pytest.fixture(autouse=True)
