@@ -22,6 +22,9 @@ class Config:
     EMBEDDING_MODEL = "text-embedding-3-small"
     EMBEDDING_DIMENSION = 1536
     VECTOR_TABLE_NAME = "knowforge_vectors"
+    IMAGE_VECTOR_TABLE_NAME = "knowforge_vectors_image"
+    CONTENT_KIND_IMAGE = "image"
+    CONTENT_KIND_TEXT = "text"
     CHAT_MODEL = "gpt-4o-mini"
     TOP_K = 5
     CHUNK_SIZE = 1024

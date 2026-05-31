@@ -17,6 +17,7 @@ def test_get_env_raises_when_missing(monkeypatch: pytest.MonkeyPatch) -> None:
 def test_config_exposes_expected_defaults() -> None:
     assert Config.S3_BUCKET == "knowforge-documents-bucket"
     assert Config.EMBEDDING_MODEL == "text-embedding-3-small"
+    assert Config.IMAGE_VECTOR_TABLE_NAME == "knowforge_vectors_image"
     assert "application/pdf" in Config.ALLOWED_MIME_TYPES
     assert "image/png" in Config.ALLOWED_MIME_TYPES
     assert "image/jpeg" in Config.ALLOWED_MIME_TYPES
