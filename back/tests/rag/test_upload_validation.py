@@ -6,6 +6,7 @@ from rag.upload import _check_content_type, _check_file_size
 
 def test_check_content_type_accepts_allowed_mime() -> None:
     _check_content_type("text/plain")
+    _check_content_type("image/png")
 
 
 def test_check_content_type_rejects_unknown_mime() -> None:

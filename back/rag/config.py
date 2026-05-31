@@ -32,6 +32,8 @@ class Config:
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "text/plain",
         "text/markdown",
+        "image/png",
+        "image/jpeg",
     }
 
     MAX_FILE_SIZE = 25 * 1024 * 1024  # 25 MB
