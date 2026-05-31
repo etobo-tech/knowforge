@@ -40,6 +40,39 @@ def db_begin_indexing(db: Session, document: Document) -> None:
     db.flush()
 
 
+def db_save_indexed_image_chunk(
+    db: Session,
+    document: Document,
+    *,
+    search_description: str,
+) -> Document:
+    db.query(DocumentChunk).filter(DocumentChunk.document_id == document.id).delete()
+
+    db.add(
+        DocumentChunk(
+            document_id=document.id,
+            chunk_index=0,
+            content=f"Image description: {search_description}",
+            embedding=None,
+            metadata_={
+                "content_kind": "image",
+                "s3_key": document.s3_key,
+                "search_description": search_description,
+                "filename": document.filename,
+                "mime_type": document.mime_type,
+            },
+        )
+    )
+
+    document.chunks_count = 1
+    document.status = DocumentStatus.INDEXED
+    document.indexed_at = datetime.now(timezone.utc)
+    document.error_message = None
+    db.commit()
+    db.refresh(document)
+    return document
+
+
 def db_save_indexed_chunks(
     db: Session, document: Document, chunk_texts: list[str]
 ) -> Document:

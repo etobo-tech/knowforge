@@ -21,3 +21,13 @@ def configure_llama_index() -> None:
         api_key=Config.OPENAI_API_KEY,
     )
     _configured = True
+
+
+def get_vision_llm(*, detail: str) -> OpenAI:
+    configure_llama_index()
+
+    return OpenAI(
+        model=Config.VISION_MODEL,
+        api_key=Config.OPENAI_API_KEY,
+        model_kwargs={"detail": detail},
+    )

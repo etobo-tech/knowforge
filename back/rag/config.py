@@ -23,9 +23,17 @@ class Config:
     EMBEDDING_DIMENSION = 1536
     VECTOR_TABLE_NAME = "knowforge_vectors"
     IMAGE_VECTOR_TABLE_NAME = "knowforge_vectors_image"
+    VISION_MODEL = "gpt-4o-mini"
+    CHAT_MODEL = "gpt-4o-mini"
+    IMAGE_INDEX_DETAIL = "low"
+    CHAT_IMAGE_DETAIL = "high"
     CONTENT_KIND_IMAGE = "image"
     CONTENT_KIND_TEXT = "text"
-    CHAT_MODEL = "gpt-4o-mini"
+    IMAGE_SEARCH_DESCRIPTION_PROMPT = (
+        "Describe this image in dense, search-friendly prose for retrieval. "
+        "Include visible text, objects, layout, colors, and any data or charts. "
+        "Do not use markdown or bullet lists."
+    )
     TOP_K = 5
     CHUNK_SIZE = 1024
     CHUNK_OVERLAP = 200
