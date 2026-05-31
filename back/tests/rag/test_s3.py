@@ -6,6 +6,7 @@ from rag.s3 import (
     _safe_attachment_filename,
     delete_object_from_s3,
     presigned_download_url,
+    presigned_inline_url,
     upload_document_to_s3,
 )
 from tests.helpers.constants import DEV_USER_ID
@@ -35,3 +36,18 @@ def test_upload_delete_and_presign_roundtrip(s3_mock: None) -> None:
 
     assert url.startswith("http")
     assert not any(item["Key"] == document.s3_key for item in objects)
+
+
+def test_presigned_inline_url_returns_http_url(s3_mock: None) -> None:
+    document = build_document(
+        user_id=DEV_USER_ID,
+        filename="photo.png",
+        mime_type="image/png",
+        size_bytes=10,
+        content_hash="hash-inline",
+    )
+    upload_document_to_s3(document, b"png-bytes")
+
+    url = presigned_inline_url(document.s3_key)
+
+    assert url.startswith("http")
