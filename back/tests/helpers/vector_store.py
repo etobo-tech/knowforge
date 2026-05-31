@@ -120,6 +120,10 @@ def patch_vector_store(monkeypatch) -> None:
         fake_sync_document_vectors,
     )
     monkeypatch.setattr(
+        "rag.indexing.text.sync_document_vectors",
+        fake_sync_document_vectors,
+    )
+    monkeypatch.setattr(
         "rag.vector_store.sync_image_document_vectors",
         fake_sync_image_document_vectors,
     )

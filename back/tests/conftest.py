@@ -62,7 +62,7 @@ def fake_embeddings(monkeypatch: pytest.MonkeyPatch) -> None:
         deterministic_embeddings,
     )
     monkeypatch.setattr(
-        "rag.indexing.pipeline.embed_texts",
+        "rag.indexing.text.embed_texts",
         deterministic_embeddings,
     )
 
