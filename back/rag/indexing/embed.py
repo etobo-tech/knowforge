@@ -1,17 +1,16 @@
-from openai import OpenAI
+from llama_index.core import Settings
 
-from rag.config import Config
+from rag.llama_settings import configure_llama_index
 
 
 def embed_texts(texts: list[str]) -> list[list[float]]:
     if not texts:
         return []
 
-    client = OpenAI(api_key=Config.OPENAI_API_KEY)
+    configure_llama_index()
 
-    response = client.embeddings.create(
-        model=Config.EMBEDDING_MODEL,
-        input=texts,
-    )
+    embed_model = Settings.embed_model
+    if embed_model is None:
+        raise RuntimeError("Embedding model is not configured")
 
-    return [item.embedding for item in response.data]
+    return embed_model.get_text_embedding_batch(texts)
