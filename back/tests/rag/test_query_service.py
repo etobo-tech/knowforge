@@ -280,4 +280,3 @@ def test_generate_chat_reply_uses_multimodal_path_for_image_nodes(
     assert reply.content == "The chart shows growth."
     assert len(reply.sources) == 1
     assert reply.sources[0].content_kind == "image"
-

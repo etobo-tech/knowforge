@@ -8,6 +8,8 @@ export type DocumentResponse = {
   content_hash: string | null
   created_at: string
   indexed_at?: string | null
+  preview_url?: string | null
+  download_url?: string | null
 }
 
 export type MessageResponse = {
@@ -81,11 +83,6 @@ export async function listDocuments(): Promise<DocumentResponse[]> {
     throw new Error(detail ?? `Failed to list documents (${response.status})`)
   }
   return (await response.json()) as DocumentResponse[]
-}
-
-/** API responds 302 → S3 presigned URL. Use as `<a href>` (optionally `target="_blank"`). */
-export function documentDownloadHref(documentId: string): string {
-  return `${API_BASE}/api/documents/${encodeURIComponent(documentId)}/download`
 }
 
 export async function deleteDocument(id: string): Promise<void> {

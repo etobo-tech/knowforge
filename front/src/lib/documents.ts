@@ -42,6 +42,12 @@ export function formatDateTime(iso: string | null | undefined): string {
   })
 }
 
+const IMAGE_MIME_TYPES = new Set(['image/png', 'image/jpeg'])
+
+export function isImageMime(mimeType: string): boolean {
+  return IMAGE_MIME_TYPES.has(mimeType)
+}
+
 export function mimeToLabel(mimeType: string): string {
   const map: Record<string, string> = {
     'application/pdf': 'PDF',
