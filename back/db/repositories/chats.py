@@ -77,6 +77,17 @@ def db_append_message(
     return message
 
 
+def _get_source_metadata(source: SourceRef) -> dict | None:
+    if source.content_kind or source.s3_key or source.filename or source.mime_type:
+        return {
+            "content_kind": source.content_kind,
+            "s3_key": source.s3_key,
+            "filename": source.filename,
+            "mime_type": source.mime_type,
+        }
+    return None
+
+
 def db_append_assistant_with_sources(
     db: Session,
     chat: Chat,
@@ -100,6 +111,7 @@ def db_append_assistant_with_sources(
                 chunk_id=source.chunk_id,
                 score=source.score,
                 quoted_text=source.quoted_text,
+                metadata_=_get_source_metadata(source),
             )
         )
 
