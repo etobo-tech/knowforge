@@ -1,8 +1,8 @@
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from api.schemas.chats import ChatDetailResponse, MessageResponse
-from db.models import Chat, Message, MessageRole
+from api.schemas.chats import ChatDetailResponse, MessageResponse, MessageSourceResponse
+from db.models import Chat, Message, MessageRole, MessageSource
 
 
 def test_chat_detail_response_from_orm() -> None:
@@ -45,3 +45,25 @@ def test_message_response_defaults_sources_to_empty() -> None:
     response = MessageResponse.model_validate(message)
 
     assert response.sources == []
+
+
+def test_message_source_response_reads_metadata_fields() -> None:
+    source = MessageSource(
+        id=uuid4(),
+        message_id=uuid4(),
+        document_id=uuid4(),
+        chunk_id=uuid4(),
+        score=0.88,
+        quoted_text="Excerpt",
+        metadata_={
+            "content_kind": "image",
+            "filename": "diagram.png",
+            "mime_type": "image/png",
+        },
+    )
+
+    response = MessageSourceResponse.model_validate(source)
+
+    assert response.content_kind == "image"
+    assert response.filename == "diagram.png"
+    assert response.mime_type == "image/png"
