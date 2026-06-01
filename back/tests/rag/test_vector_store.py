@@ -78,13 +78,25 @@ def test_user_metadata_filters_scopes_retrieval_to_user() -> None:
     assert only_filter.value == str(DEV_USER_ID)
 
 
-def test_delete_document_vectors_uses_document_filter_on_both_stores(
-    monkeypatch,
-) -> None:
+def test_delete_document_vectors_uses_document_filter(monkeypatch) -> None:
     text_store = FakePgVectorStore()
     image_store = FakePgVectorStore()
     monkeypatch.setattr(vector_store, "get_pg_vector_store", lambda: text_store)
     monkeypatch.setattr(vector_store, "get_pg_image_vector_store", lambda: image_store)
+    monkeypatch.setattr(
+        vector_store,
+        "delete_text_document_vectors",
+        lambda document_id: text_store.delete_nodes(
+            filters=vector_store._document_metadata_filters(document_id)
+        ),
+    )
+    monkeypatch.setattr(
+        vector_store,
+        "delete_image_document_vectors",
+        lambda document_id: image_store.delete_nodes(
+            filters=vector_store._document_metadata_filters(document_id)
+        ),
+    )
 
     document_id = _indexed_document_id()
     real_delete_document_vectors(document_id)

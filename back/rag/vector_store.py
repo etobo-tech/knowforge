@@ -83,36 +83,25 @@ def delete_document_vectors(document_id: UUID) -> None:
     delete_image_document_vectors(document_id)
 
 
-def sync_document_vectors(
+def _text_node_from_chunk(
+    *,
     document: Document,
-    chunks: list[DocumentChunk],
-    embeddings: list[list[float]],
-) -> None:
-    if len(chunks) != len(embeddings):
-        raise ValueError("chunks and embeddings length mismatch")
-
-    store = get_pg_vector_store()
-    delete_text_document_vectors(document.id)
-
-    if not chunks:
-        return
-
-    nodes: list[BaseNode] = [
-        TextNode(
-            id_=str(chunk.id),
-            text=chunk.content,
-            embedding=embedding,
-            metadata={
-                "user_id": str(document.user_id),
-                "document_id": str(document.id),
-                "chunk_id": str(chunk.id),
-                "filename": document.filename,
-                "page_number": chunk.page_number,
-            },
-        )
-        for chunk, embedding in zip(chunks, embeddings, strict=True)
-    ]
-    store.add(nodes)
+    chunk: DocumentChunk,
+    embedding: list[float],
+) -> TextNode:
+    return TextNode(
+        id_=str(chunk.id),
+        text=chunk.content,
+        embedding=embedding,
+        metadata={
+            "user_id": str(document.user_id),
+            "document_id": str(document.id),
+            "chunk_id": str(chunk.id),
+            "filename": document.filename,
+            "page_number": chunk.page_number,
+            "content_kind": Config.CONTENT_KIND_TEXT,
+        },
+    )
 
 
 def _image_node_from_chunk(
@@ -137,6 +126,27 @@ def _image_node_from_chunk(
             "content_kind": Config.CONTENT_KIND_IMAGE,
         },
     )
+
+
+def sync_document_vectors(
+    document: Document,
+    chunks: list[DocumentChunk],
+    embeddings: list[list[float]],
+) -> None:
+    if len(chunks) != len(embeddings):
+        raise ValueError("chunks and embeddings length mismatch")
+
+    store = get_pg_vector_store()
+    delete_text_document_vectors(document.id)
+
+    if not chunks:
+        return
+
+    nodes: list[BaseNode] = [
+        _text_node_from_chunk(document=document, chunk=chunk, embedding=embedding)
+        for chunk, embedding in zip(chunks, embeddings, strict=True)
+    ]
+    store.add(nodes)
 
 
 def sync_image_document_vectors(

@@ -26,3 +26,16 @@ def test_extract_text_from_pdf_and_docx() -> None:
 def test_extract_text_rejects_unknown_mime() -> None:
     with pytest.raises(ValueError, match="No text extractor"):
         extract_text(b"data", "application/zip")
+
+
+def test_extract_text_from_pdf_rejects_encrypted_pdf() -> None:
+    from pypdf import PdfWriter
+
+    writer = PdfWriter()
+    writer.add_blank_page(width=72, height=72)
+    writer.encrypt("secret")
+    buffer = __import__("io").BytesIO()
+    writer.write(buffer)
+
+    with pytest.raises(ValueError, match="password-protected"):
+        extract_text(buffer.getvalue(), "application/pdf")
