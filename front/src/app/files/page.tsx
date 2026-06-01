@@ -4,7 +4,9 @@ import Link from 'next/link'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Loader2, Search, Upload } from 'lucide-react'
 
-import { deleteDocument, documentDownloadHref, listDocuments, type DocumentResponse } from '@/lib/api'
+import { DocumentImageThumbnail } from '@/components/files/DocumentImageThumbnail'
+import { ImagePreviewDialog } from '@/components/files/ImagePreviewDialog'
+import { deleteDocument, listDocuments, type DocumentResponse } from '@/lib/api'
 import {
   documentStatusLabel,
   formatFileSize,
@@ -24,6 +26,7 @@ export default function FilesPage() {
   const [loadError, setLoadError] = useState<string | null>(null)
   const [query, setQuery] = useState('')
   const [deletingId, setDeletingId] = useState<string | null>(null)
+  const [imagePreview, setImagePreview] = useState<DocumentResponse | null>(null)
 
   const load = useCallback(() => {
     setLoadError(null)
@@ -49,16 +52,18 @@ export default function FilesPage() {
   }, [documents, query])
 
   const handleDelete = useCallback(
-    async (id: string, name: string) => {
-      if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return
+    async (id: string, name: string): Promise<boolean> => {
+      if (!window.confirm(`Delete “${name}”? This cannot be undone.`)) return false
       setDeletingId(id)
       try {
         await deleteDocument(id)
         setDocuments((prev) =>
           prev ? prev.filter((d) => d.id !== id) : prev,
         )
+        return true
       } catch {
         window.alert('Could not delete the file. Try again.')
+        return false
       } finally {
         setDeletingId(null)
       }
@@ -70,6 +75,23 @@ export default function FilesPage() {
 
   return (
     <div className="h-full flex flex-col">
+      {imagePreview?.preview_url ? (
+        <ImagePreviewDialog
+          open
+          filename={imagePreview.filename}
+          previewUrl={imagePreview.preview_url}
+          downloadUrl={imagePreview.download_url ?? null}
+          onClose={() => setImagePreview(null)}
+          isDeleting={deletingId === imagePreview.id}
+          onDelete={async () => {
+            const deleted = await handleDelete(
+              imagePreview.id,
+              imagePreview.filename,
+            )
+            if (deleted) setImagePreview(null)
+          }}
+        />
+      ) : null}
       <header className="px-8 py-5 border-b border-card-border bg-white">
         <h1 className="text-2xl font-bold text-text-primary">Knowledge Base</h1>
         <p className="text-sm text-text-secondary mt-0.5">
@@ -181,9 +203,18 @@ export default function FilesPage() {
                         className="border-b border-card-border last:border-b-0 hover:bg-content-bg/50 transition-colors"
                       >
                         <td className="px-6 py-4">
-                          <span className="text-sm font-semibold text-text-primary">
-                            {file.filename}
-                          </span>
+                          <div className="flex items-center gap-3 min-w-0">
+                            {file.preview_url ? (
+                              <DocumentImageThumbnail
+                                previewUrl={file.preview_url}
+                                filename={file.filename}
+                                onExpand={() => setImagePreview(file)}
+                              />
+                            ) : null}
+                            <span className="truncate text-sm font-semibold text-text-primary">
+                              {file.filename}
+                            </span>
+                          </div>
                         </td>
                         <td className="px-4 py-4 text-sm text-text-secondary">
                           {mimeToLabel(file.mime_type)}
@@ -207,15 +238,19 @@ export default function FilesPage() {
                         <td className="px-6 py-4 text-right">
                           {ui === 'error' ? (
                             <span className="text-sm text-text-secondary">
-                              <a
-                                href={documentDownloadHref(file.id)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                              >
-                                Download
-                              </a>
-                              {' '}&middot;{' '}
+                              {file.download_url ? (
+                                <>
+                                  <a
+                                    href={file.download_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Download
+                                  </a>
+                                  {' '}&middot;{' '}
+                                </>
+                              ) : null}
                               <button
                                 type="button"
                                 disabled
@@ -238,15 +273,19 @@ export default function FilesPage() {
                             </span>
                           ) : (
                             <span className="text-sm text-text-secondary">
-                              <a
-                                href={documentDownloadHref(file.id)}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="text-primary hover:underline"
-                              >
-                                Download
-                              </a>
-                              {' '}&middot;{' '}
+                              {file.download_url ? (
+                                <>
+                                  <a
+                                    href={file.download_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-primary hover:underline"
+                                  >
+                                    Download
+                                  </a>
+                                  {' '}&middot;{' '}
+                                </>
+                              ) : null}
                               <button
                                 type="button"
                                 disabled={busy}

@@ -13,5 +13,7 @@ class DocumentResponse(BaseModel):
     content_hash: str | None
     created_at: datetime
     indexed_at: datetime | None = None
+    preview_url: str | None = None
+    download_url: str | None = None
 
     model_config = ConfigDict(from_attributes=True)

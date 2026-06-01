@@ -63,6 +63,57 @@ def test_upload_duplicate_returns_200(
     assert first.json()["id"] == second.json()["id"]
 
 
+def test_list_documents_includes_preview_url_for_images(
+    client: TestClient,
+    s3_mock: None,
+) -> None:
+    png_bytes = b"\x89PNG\r\n\x1a\n" + b"preview-test-bytes"
+    upload = client.post(
+        "/api/documents/upload",
+        files={"file": ("chart.png", png_bytes, "image/png")},
+    )
+    assert upload.status_code == 201
+    upload_body = upload.json()
+    assert upload_body["preview_url"] is not None
+    assert upload_body["preview_url"].startswith("http")
+    assert upload_body["download_url"] is not None
+
+    listed = client.get("/api/documents")
+    assert listed.status_code == 200
+    assert len(listed.json()) == 1
+    assert listed.json()[0]["preview_url"] == upload_body["preview_url"]
+
+
+def test_list_documents_omits_preview_url_for_text(
+    client: TestClient,
+    s3_mock: None,
+) -> None:
+    content = plain_text_bytes("No preview for text.")
+    client.post(
+        "/api/documents/upload",
+        files={"file": ("notes.txt", content, "text/plain")},
+    )
+
+    listed = client.get("/api/documents")
+    doc = listed.json()[0]
+
+    assert doc["preview_url"] is None
+    assert doc["download_url"] is not None
+
+
+def test_preview_endpoint_removed(client: TestClient, s3_mock: None) -> None:
+    png_bytes = b"\x89PNG\r\n\x1a\n"
+    upload = client.post(
+        "/api/documents/upload",
+        files={"file": ("x.png", png_bytes, "image/png")},
+    )
+    document_id = upload.json()["id"]
+
+    response = client.get(f"/api/documents/{document_id}/preview")
+
+    assert response.status_code == 404
+
+
 def test_download_document_redirects(
     client: TestClient,
     s3_mock: None,

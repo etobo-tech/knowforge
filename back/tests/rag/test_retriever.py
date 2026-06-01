@@ -2,7 +2,11 @@ from uuid import uuid4
 
 from llama_index.core.schema import NodeWithScore, QueryBundle, TextNode
 
-from rag.query.retriever import FusedVectorRetriever, _score_value, create_user_retriever
+from rag.query.retriever import (
+    FusedVectorRetriever,
+    _score_value,
+    create_user_retriever,
+)
 
 
 class _StubRetriever:
