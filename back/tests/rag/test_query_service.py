@@ -235,3 +235,49 @@ def test_sources_from_nodes_includes_image_metadata() -> None:
     assert sources[0].s3_key == "uploads/chart.png"
     assert sources[0].filename == "chart.png"
 
+
+def test_generate_chat_reply_uses_multimodal_path_for_image_nodes(
+    db_session: Session,
+    monkeypatch,
+) -> None:
+    image_node = NodeWithScore(
+        node=TextNode(
+            text="Chart description",
+            metadata={
+                "document_id": str(uuid4()),
+                "chunk_id": str(uuid4()),
+                "content_kind": "image",
+                "s3_key": "uploads/chart.png",
+                "filename": "chart.png",
+                "mime_type": "image/png",
+            },
+        ),
+        score=0.8,
+    )
+
+    class FakeRetriever:
+        def retrieve(self, query_bundle):
+            return [image_node]
+
+    monkeypatch.setattr(service, "db_user_has_indexed_chunks", lambda db, user_id: True)
+    monkeypatch.setattr(service, "configure_llama_index", lambda: None)
+    monkeypatch.setattr(
+        service, "create_user_retriever", lambda user_id: FakeRetriever()
+    )
+    monkeypatch.setattr(
+        service,
+        "generate_multimodal_reply",
+        lambda **kwargs: "The chart shows growth.",
+    )
+    monkeypatch.setattr(
+        service,
+        "db_filter_valid_source_refs",
+        lambda db, user_id, sources: sources,
+    )
+
+    reply = generate_chat_reply(db_session, DEV_USER_ID, "Explain the chart", [])
+
+    assert reply.content == "The chart shows growth."
+    assert len(reply.sources) == 1
+    assert reply.sources[0].content_kind == "image"
+

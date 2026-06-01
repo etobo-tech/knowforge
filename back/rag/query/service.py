@@ -11,12 +11,16 @@ from db.repositories.documents import (
 )
 from rag.llama_settings import configure_llama_index
 from rag.query.memory import build_memory
+from rag.query.multimodal_chat import generate_multimodal_reply
 from rag.query.prompts import (
     NO_INDEXED_DOCUMENTS_REPLY,
     NO_RETRIEVAL_CONTEXT_REPLY,
 )
 from rag.query.retriever import create_user_retriever
-from rag.query.sources import sources_from_nodes
+from rag.query.sources import (
+    is_image_node,
+    sources_from_nodes,
+)
 from rag.query.text_chat import generate_text_reply
 from rag.query.types import ChatReply, SourceRef
 
@@ -32,6 +36,7 @@ __all__ = [
     "db_filter_valid_source_refs",
     "db_user_has_indexed_chunks",
     "generate_chat_reply",
+    "generate_multimodal_reply",
 ]
 
 
@@ -59,11 +64,21 @@ def generate_chat_reply(
     if not retrieved_nodes:
         return ChatReply(content=NO_RETRIEVAL_CONTEXT_REPLY, sources=[])
 
-    content, source_nodes = generate_text_reply(
-        user_message=user_message,
-        prior_messages=prior_messages,
-        retriever=retriever,
-    )
+    has_image_context = any(is_image_node(node) for node in retrieved_nodes)
+
+    if has_image_context:
+        content = generate_multimodal_reply(
+            user_message=user_message,
+            prior_messages=prior_messages,
+            source_nodes=retrieved_nodes,
+        )
+        source_nodes = retrieved_nodes
+    else:
+        content, source_nodes = generate_text_reply(
+            user_message=user_message,
+            prior_messages=prior_messages,
+            retriever=retriever,
+        )
 
     if not source_nodes:
         return ChatReply(content=NO_RETRIEVAL_CONTEXT_REPLY, sources=[])
