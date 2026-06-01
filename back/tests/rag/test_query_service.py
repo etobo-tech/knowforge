@@ -47,7 +47,7 @@ def _source_node(*, chunk_id: str | None = None) -> NodeWithScore:
 def test_sources_from_nodes_skips_duplicates_and_missing_metadata() -> None:
     chunk_id = str(uuid4())
 
-    sources = service._sources_from_nodes(
+    sources = service.sources_from_nodes(
         [
             _source_node(chunk_id=chunk_id),
             _source_node(chunk_id=chunk_id),
@@ -62,7 +62,7 @@ def test_sources_from_nodes_skips_duplicates_and_missing_metadata() -> None:
 
 
 def test_sources_from_nodes_skips_invalid_uuids() -> None:
-    sources = service._sources_from_nodes(
+    sources = service.sources_from_nodes(
         [
             NodeWithScore(
                 node=TextNode(
@@ -99,7 +99,7 @@ def test_build_memory_keeps_user_and_assistant_messages() -> None:
         ),
     ]
 
-    memory = service._build_memory(messages)
+    memory = service.build_memory(messages)
 
     assert [message.content for message in memory.get()] == ["Question", "Answer"]
 
@@ -110,17 +110,14 @@ def test_generate_chat_reply_returns_fallback_without_retrieved_context(
 ) -> None:
     chat = db_create_chat(db_session, DEV_USER_ID, title="Empty context")
 
-    class FakeEngine:
-        def chat(self, user_message: str):
-            return type("Response", (), {"response": "unused", "source_nodes": []})()
+    class FakeRetriever:
+        def retrieve(self, query_bundle):
+            return []
 
     monkeypatch.setattr(service, "db_user_has_indexed_chunks", lambda db, user_id: True)
-    monkeypatch.setattr(service, "_configure_llama_index", lambda: None)
-    monkeypatch.setattr(service, "create_user_retriever", lambda user_id: object())
+    monkeypatch.setattr(service, "configure_llama_index", lambda: None)
     monkeypatch.setattr(
-        service.ContextChatEngine,
-        "from_defaults",
-        lambda **kwargs: FakeEngine(),
+        service, "create_user_retriever", lambda user_id: FakeRetriever()
     )
 
     reply = generate_chat_reply(db_session, DEV_USER_ID, "Where is context?", [])
@@ -136,6 +133,10 @@ def test_generate_chat_reply_returns_content_and_sources(
     chat = db_create_chat(db_session, DEV_USER_ID, title="With context")
     source_node = _source_node()
 
+    class FakeRetriever:
+        def retrieve(self, query_bundle):
+            return [source_node]
+
     class FakeEngine:
         def chat(self, user_message: str):
             return type(
@@ -145,8 +146,10 @@ def test_generate_chat_reply_returns_content_and_sources(
             )()
 
     monkeypatch.setattr(service, "db_user_has_indexed_chunks", lambda db, user_id: True)
-    monkeypatch.setattr(service, "_configure_llama_index", lambda: None)
-    monkeypatch.setattr(service, "create_user_retriever", lambda user_id: object())
+    monkeypatch.setattr(service, "configure_llama_index", lambda: None)
+    monkeypatch.setattr(
+        service, "create_user_retriever", lambda user_id: FakeRetriever()
+    )
     monkeypatch.setattr(
         service,
         "db_filter_valid_source_refs",
@@ -171,6 +174,10 @@ def test_generate_chat_reply_returns_fallback_for_empty_model_response(
     chat = db_create_chat(db_session, DEV_USER_ID, title="Empty response")
     source_node = _source_node()
 
+    class FakeRetriever:
+        def retrieve(self, query_bundle):
+            return [source_node]
+
     class FakeEngine:
         def chat(self, user_message: str):
             return type(
@@ -180,8 +187,10 @@ def test_generate_chat_reply_returns_fallback_for_empty_model_response(
             )()
 
     monkeypatch.setattr(service, "db_user_has_indexed_chunks", lambda db, user_id: True)
-    monkeypatch.setattr(service, "_configure_llama_index", lambda: None)
-    monkeypatch.setattr(service, "create_user_retriever", lambda user_id: object())
+    monkeypatch.setattr(service, "configure_llama_index", lambda: None)
+    monkeypatch.setattr(
+        service, "create_user_retriever", lambda user_id: FakeRetriever()
+    )
     monkeypatch.setattr(
         service,
         "db_filter_valid_source_refs",
@@ -197,3 +206,32 @@ def test_generate_chat_reply_returns_fallback_for_empty_model_response(
 
     assert reply.content == NO_RETRIEVAL_CONTEXT_REPLY
     assert len(reply.sources) == 1
+
+
+def test_sources_from_nodes_includes_image_metadata() -> None:
+    chunk_id = str(uuid4())
+    document_id = str(uuid4())
+    sources = service.sources_from_nodes(
+        [
+            NodeWithScore(
+                node=TextNode(
+                    text="A chart showing quarterly revenue",
+                    metadata={
+                        "document_id": document_id,
+                        "chunk_id": chunk_id,
+                        "content_kind": "image",
+                        "s3_key": "uploads/chart.png",
+                        "filename": "chart.png",
+                        "mime_type": "image/png",
+                    },
+                ),
+                score=0.9,
+            )
+        ]
+    )
+
+    assert len(sources) == 1
+    assert sources[0].content_kind == "image"
+    assert sources[0].s3_key == "uploads/chart.png"
+    assert sources[0].filename == "chart.png"
+
