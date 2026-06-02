@@ -43,13 +43,13 @@ export function ImagePreviewDialog({
         type="button"
         aria-label="Close preview"
         onClick={onClose}
-        className="absolute inset-0 bg-black/60"
+        className="absolute inset-0 bg-overlay"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-card-border bg-white shadow-xl"
+        className="relative z-10 flex max-h-[90vh] w-full max-w-5xl flex-col overflow-hidden rounded-2xl border border-card-border bg-card-bg shadow-xl"
       >
         <div className="flex items-center gap-3 border-b border-card-border px-5 py-3">
           <h2

@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useState } from 'react'
 import { Plus, Settings, MessageSquare, FolderOpen, Upload } from 'lucide-react'
 
+import { ThemeToggle } from '@/components/ThemeToggle'
 import {
   CHATS_UPDATED_EVENT,
   getCachedChatList,
@@ -137,10 +138,11 @@ export default function Sidebar() {
         </div>
       </nav>
 
-      <div className="p-4 border-t border-white/10">
+      <div className="space-y-1 border-t border-white/10 p-4">
+        <ThemeToggle />
         <Link
           href="/settings"
-          className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-sidebar-text hover:bg-sidebar-active/50 transition-colors"
+          className="flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-sidebar-text transition-colors hover:bg-sidebar-active/50"
         >
           <Settings size={14} className="opacity-60" />
           Settings

@@ -42,13 +42,13 @@ export function Modal({
         aria-label="Close dialog"
         disabled={disableClose}
         onClick={onClose}
-        className="absolute inset-0 bg-black/40 disabled:cursor-not-allowed"
+        className="absolute inset-0 bg-overlay disabled:cursor-not-allowed"
       />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
-        className="relative z-10 w-full max-w-md rounded-2xl border border-card-border bg-white shadow-xl"
+        className="relative z-10 w-full max-w-md rounded-2xl border border-card-border bg-card-bg shadow-xl"
       >
         <div className="flex items-start justify-between gap-4 border-b border-card-border px-5 py-4">
           <h2 id={titleId} className="text-lg font-semibold text-text-primary">
