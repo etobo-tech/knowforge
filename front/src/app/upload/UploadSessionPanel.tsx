@@ -30,7 +30,7 @@ export function UploadSessionPanel({
           <button
             type="button"
             onClick={onDismiss}
-            className="rounded-lg border border-card-border bg-white px-4 py-2 text-sm font-medium text-text-primary hover:bg-content-bg"
+            className="rounded-lg border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-text-primary hover:bg-content-bg"
           >
             Dismiss
           </button>
@@ -40,7 +40,7 @@ export function UploadSessionPanel({
         {rows.map((row) => (
           <li
             key={row.id}
-            className="flex items-start justify-between gap-3 rounded-xl border border-card-border bg-white px-4 py-3"
+            className="flex items-start justify-between gap-3 rounded-xl border border-card-border bg-content-bg px-4 py-3"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-text-primary">
@@ -53,17 +53,17 @@ export function UploadSessionPanel({
                   'FILE'}
               </p>
               {row.phase === 'done' && row.alreadyInDb ? (
-                <p className="mt-2 text-xs font-medium text-amber-800">
+                <p className="mt-2 text-xs font-medium text-warning">
                   This document already existed in the knowledge base.
                 </p>
               ) : null}
               {row.phase === 'done' && row.duplicateInList ? (
-                <p className="mt-2 text-xs font-medium text-amber-800">
+                <p className="mt-2 text-xs font-medium text-warning">
                   This file was already uploaded in this session — skipped.
                 </p>
               ) : null}
               {row.phase === 'error' && row.errorMessage ? (
-                <p className="mt-2 text-xs font-medium text-red-700">
+                <p className="mt-2 text-xs font-medium text-error">
                   {row.errorMessage}
                 </p>
               ) : null}
@@ -82,14 +82,14 @@ export function UploadSessionPanel({
               !row.alreadyInDb &&
               !row.duplicateInList ? (
                 <Check
-                  className="h-6 w-6 shrink-0 text-emerald-600"
+                  className="h-6 w-6 shrink-0 text-success"
                   aria-label="Uploaded"
                 />
               ) : null}
               {row.phase === 'done' &&
               (row.alreadyInDb || row.duplicateInList) ? (
                 <span
-                  className="text-lg leading-none text-amber-600"
+                  className="text-lg leading-none text-warning"
                   aria-label="Notice"
                 >
                   !
@@ -97,7 +97,7 @@ export function UploadSessionPanel({
               ) : null}
               {row.phase === 'error' ? (
                 <AlertCircle
-                  className="h-6 w-6 shrink-0 text-red-600"
+                  className="h-6 w-6 shrink-0 text-error"
                   aria-label="Error"
                 />
               ) : null}

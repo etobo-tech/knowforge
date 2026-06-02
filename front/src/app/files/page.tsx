@@ -92,7 +92,7 @@ export default function FilesPage() {
           }}
         />
       ) : null}
-      <header className="px-8 py-5 border-b border-card-border bg-white">
+      <header className="px-8 py-5 border-b border-card-border bg-card-bg">
         <h1 className="text-2xl font-bold text-text-primary">Knowledge Base</h1>
         <p className="text-sm text-text-secondary mt-0.5">
           Manage the documents used by the RAG system

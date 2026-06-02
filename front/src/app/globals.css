@@ -1,6 +1,8 @@
 @import "tailwindcss";
 
-@theme inline {
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
   --color-primary: #4f46e5;
   --color-primary-hover: #4338ca;
   --color-sidebar-bg: #1e1b3a;
@@ -14,7 +16,30 @@
   --color-success: #10b981;
   --color-warning: #f59e0b;
   --color-error: #ef4444;
+  --color-overlay: rgb(0 0 0 / 0.45);
   --font-sans: var(--font-inter);
+}
+
+.dark {
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-sidebar-bg: #12101f;
+  --color-sidebar-text: #b8b4d4;
+  --color-sidebar-active: rgba(129, 140, 248, 0.22);
+  --color-content-bg: #0f0e17;
+  --color-card-bg: #1a1829;
+  --color-card-border: #2d2a42;
+  --color-text-primary: #f0eef8;
+  --color-text-secondary: #9ca3af;
+  --color-overlay: rgb(0 0 0 / 0.72);
+}
+
+html {
+  color-scheme: light;
+}
+
+html.dark {
+  color-scheme: dark;
 }
 
 body {
@@ -26,4 +51,8 @@ body {
 * {
   scrollbar-width: thin;
   scrollbar-color: #d1d5db transparent;
+}
+
+.dark * {
+  scrollbar-color: #4b5563 transparent;
 }

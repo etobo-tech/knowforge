@@ -38,7 +38,7 @@ function TypingBubble() {
   return (
     <div className="flex justify-start">
       <div
-        className="max-w-[min(85%,28rem)] rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 shadow-sm"
+        className="max-w-[min(85%,28rem)] rounded-2xl rounded-bl-md border border-card-border bg-card-bg px-4 py-3 shadow-sm dark:shadow-none"
         aria-label="Knowforge is typing"
       >
         <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-primary">
@@ -98,7 +98,7 @@ function MessageBubble({
               ? `w-full rounded-2xl rounded-br-md bg-primary text-sm leading-relaxed text-white shadow-sm ${
                   isEditing ? 'ring-2 ring-white/30 px-3 py-2.5' : 'px-4 py-3'
                 }`
-              : 'rounded-2xl rounded-bl-md border border-card-border bg-white px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm'
+              : 'rounded-2xl rounded-bl-md border border-card-border bg-card-bg px-4 py-3 text-sm leading-relaxed text-text-primary shadow-sm dark:shadow-none'
           }
         >
           {!isUser ? (
@@ -477,7 +477,7 @@ export function ChatView({ initialChatId }: Props) {
         isLoading={confirmLoading}
       />
 
-      <header className="px-8 py-5 border-b border-card-border bg-white shrink-0">
+      <header className="px-8 py-5 border-b border-card-border bg-card-bg shrink-0">
         <h1 className="text-2xl font-bold text-text-primary truncate">{title}</h1>
         <p className="text-sm text-text-secondary mt-0.5">
           Ask questions grounded in your company documents

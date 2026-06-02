@@ -29,7 +29,7 @@ export function StagedFilesPanel({
             type="button"
             disabled={isUploading}
             onClick={onCancelAll}
-            className="rounded-lg border border-card-border bg-white px-4 py-2 text-sm font-medium text-text-primary hover:bg-content-bg disabled:opacity-50"
+            className="rounded-lg border border-card-border bg-card-bg px-4 py-2 text-sm font-medium text-text-primary hover:bg-content-bg disabled:opacity-50"
           >
             Cancel all
           </button>
@@ -47,7 +47,7 @@ export function StagedFilesPanel({
         {staged.map((entry) => (
           <li
             key={entry.id}
-            className="flex items-center justify-between gap-3 rounded-xl border border-card-border bg-white px-4 py-3"
+            className="flex items-center justify-between gap-3 rounded-xl border border-card-border bg-content-bg px-4 py-3"
           >
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium text-text-primary">
