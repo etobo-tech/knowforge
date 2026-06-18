@@ -29,15 +29,15 @@ type ThemeContextValue = {
 const ThemeContext = createContext<ThemeContextValue | null>(null)
 
 export function ThemeProvider({ children }: { children: ReactNode }) {
-  const [preference, setPreferenceState] = useState<ThemePreference>(() => {
-    if (typeof window === 'undefined') return 'system'
-    return getStoredPreference() ?? 'system'
-  })
-  const [systemTheme, setSystemTheme] = useState<Theme>(() =>
-    typeof window !== 'undefined' ? getSystemTheme() : 'light',
-  )
+  const [preference, setPreferenceState] = useState<ThemePreference>('system')
+  const [systemTheme, setSystemTheme] = useState<Theme>('light')
 
   const theme: Theme = preference === 'system' ? systemTheme : preference
+
+  useEffect(() => {
+    setPreferenceState(getStoredPreference() ?? 'system')
+    setSystemTheme(getSystemTheme())
+  }, [])
 
   useEffect(() => {
     applyTheme(theme)
