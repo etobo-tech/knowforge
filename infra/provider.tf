@@ -7,11 +7,15 @@ terraform {
       version = "~> 6.0"
     }
   }
-}
 
+  backend "s3" {
+    key     = "terraform.tfstate"
+    region  = "us-east-1"
+    encrypt = true
+  }
+}
 
 provider "aws" {
   region  = var.aws_region
-  profile = var.aws_profile
+  profile = var.aws_profile != "" ? var.aws_profile : null
 }
-

@@ -6,6 +6,7 @@ variable "aws_region" {
 variable "aws_profile" {
   type        = string
   default     = "knowforge"
+  description = "AWS CLI profile for local runs. Leave empty in CI."
 }
 
 variable "project_name" {
