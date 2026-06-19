@@ -41,7 +41,7 @@ asyncio_mode = "auto"
 filterwarnings = ["ignore::DeprecationWarning"]
 
 [tool.coverage.run]
-source = ["api", "db", "rag", "main.py", "utils.py"]
+source = ["api", "db", "rag", "utils.py"]
 omit = ["db/migrations/*"]
 
 [tool.coverage.report]
@@ -61,7 +61,7 @@ line-ending = "auto"
 
 [tool.mypy]
 python_version = "3.14"
-files = ["api", "db", "rag", "main.py", "utils.py"]
+files = ["api", "db", "rag", "utils.py"]
 exclude = ["db/migrations/"]
 namespace_packages = true
 explicit_package_bases = true
