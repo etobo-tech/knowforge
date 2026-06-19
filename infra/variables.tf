@@ -7,3 +7,8 @@ variable "aws_profile" {
   type        = string
   default     = "knowforge"
 }
+
+variable "project_name" {
+  type        = string
+  default     = "knowforge"
+}
