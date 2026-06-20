@@ -217,6 +217,13 @@ __marimo__/
 # Streamlit
 .streamlit/secrets.toml
 
+# macOS
+.DS_Store
+
+# Backend build artifacts (Lambda zip layers, Docker export)
+back/lambda/
+back/requirements.txt
+
 # Terraform
 .terraform/
 *.tfstate
@@ -229,4 +236,9 @@ override.tf.json
 *_override.tf.json
 .terraform.tfvars
 .terraform.tfvars.json
-infra/backend.hcl
+terraform.tfvars
+terraform.tfvars.json
+*.auto.tfvars
+*.auto.tfvars.json
+*.tfplan
+*.tfplan.*
