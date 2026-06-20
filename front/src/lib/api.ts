@@ -63,7 +63,11 @@ export function formatNewChatTitle(now: Date = new Date()): string {
   return `${y}-${mo}-${d} ${h}:${min}-New chat`
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL ?? 'http://localhost:8000'
+const API_BASE =
+  process.env.NEXT_PUBLIC_API_URL ??
+  (process.env.NODE_ENV === 'production'
+    ? 'https://wd2zyvbd15.execute-api.us-east-1.amazonaws.com'
+    : 'http://localhost:8000')
 
 async function parseJsonError(response: Response): Promise<string | null> {
   const body = (await response.json().catch(() => null)) as {
