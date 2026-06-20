@@ -1,15 +1,17 @@
 import functools
-from typing import cast
+from typing import TYPE_CHECKING, cast
 
 import boto3
-from types_boto3_s3 import S3Client
 
 from db.models import Document
 from rag.config import Config
 
+if TYPE_CHECKING:
+    from types_boto3_s3 import S3Client
+
 
 @functools.cache
-def get_s3_client() -> S3Client:
+def get_s3_client() -> "S3Client":
     return boto3.client(
         "s3",
         region_name=Config.S3_REGION,
