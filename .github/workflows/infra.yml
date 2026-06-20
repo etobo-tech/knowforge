@@ -27,7 +27,7 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform init -input=false -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+      - run: terraform init -input=false -backend-config="profile="
       - run: terraform plan -input=false
 
   terraform-apply:
@@ -41,5 +41,5 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: us-east-1
       - uses: hashicorp/setup-terraform@v3
-      - run: terraform init -input=false -backend-config="bucket=${{ secrets.TF_STATE_BUCKET }}"
+      - run: terraform init -input=false -backend-config="profile="
       - run: terraform apply -auto-approve -input=false
