@@ -9,9 +9,11 @@ terraform {
   }
 
   backend "s3" {
+    bucket  = "knowforge-tfstate-627407462314"
     key     = "terraform.tfstate"
     region  = "us-east-1"
     encrypt = true
+    profile = "knowforge"
   }
 }
 

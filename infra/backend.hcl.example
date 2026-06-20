@@ -1,3 +1,0 @@
-# Copy to backend.hcl (gitignored) and set your state bucket name.
-# After the first bootstrap apply, use: knowforge-tfstate-<account_id>
-bucket = "knowforge-tfstate-000000000000"

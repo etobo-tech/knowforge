@@ -78,9 +78,8 @@ resource "aws_lambda_function" "back" {
 
   environment {
     variables = {
-      DATABASE_URL       = var.database_url
-      OPENAI_API_KEY     = var.openai_api_key
-      AWS_DEFAULT_REGION = var.aws_region
+      DATABASE_URL   = var.database_url
+      OPENAI_API_KEY = var.openai_api_key
     }
   }
 
