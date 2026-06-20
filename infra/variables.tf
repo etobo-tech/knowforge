@@ -37,6 +37,10 @@ variable "openai_api_key" {
 
 variable "cors_allowed_origins" {
   type        = list(string)
-  default     = ["http://localhost:3000", "http://127.0.0.1:3000"]
+  default     = [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    "https://knowforge.etobo.tech",
+  ]
   description = "Origins allowed to call the backend API."
 }
